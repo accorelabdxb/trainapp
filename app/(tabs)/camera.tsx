@@ -1,47 +1,59 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Camera } from 'expo-camera';
+import { CameraType, CameraView, useCameraPermissions } from 'expo-camera';
+import React, { useEffect, useRef, useState } from 'react';
+import { Text, TouchableOpacity, View } from 'react-native';
 
 export default function CameraScreen() {
-    const [hasPermission, setHasPermission] = useState<boolean | null>(null);
-    const cameraRef = useRef<Camera>(null);
+    const [permission, requestPermission] = useCameraPermissions();
+    const [facing, setFacing] = useState<CameraType>('back');
+    const cameraRef = useRef<CameraView>(null);
 
     useEffect(() => {
         (async () => {
-            const { status } = await Camera.requestCameraPermissionsAsync();
-            setHasPermission(status === 'granted');
+            if (!permission?.granted) {
+                await requestPermission();
+            }
         })();
-    }, []);
+    }, [permission, requestPermission]);
 
-    const takePicture = async () => {
-        if (cameraRef.current) {
-            const photo = await cameraRef.current.takePictureAsync();
-            console.log('📸 Photo taken:', photo.uri);
-            // You can navigate, save, or share the photo from here
-        }
-    };
-
-    if (hasPermission === null) {
-        return <View className="flex-1 bg-black items-center justify-center"><Text className="text-white">Requesting Camera...</Text></View>;
+    function toggleCameraFacing() {
+        setFacing(current => (current === 'back' ? 'front' : 'back'));
     }
 
-    if (hasPermission === false) {
-        return <View className="flex-1 bg-black items-center justify-center"><Text className="text-white">No access to camera</Text></View>;
+    if (!permission) {
+        // Camera permissions are still loading.
+        return <View />;
+    }
+
+    if (!permission.granted) {
+        // Camera permissions are not granted yet.
+        return (
+            <View className="flex-1 justify-center items-center bg-secbg">
+                <Text className="text-white text-center">We need your permission to show the camera</Text>
+                <TouchableOpacity onPress={requestPermission}>
+                    <Text className="text-blue-500 mt-2">Grant permission</Text>
+                </TouchableOpacity>
+            </View>
+        );
     }
 
     return (
-        <View className="flex-1 bg-black">
-            <Camera
+        <View className="flex-1 bg-secbg">
+            <CameraView
                 ref={cameraRef}
                 style={{ flex: 1 }}
-                type={Camera.Constants.Type.back}
-            />
-            <TouchableOpacity
-                className="absolute bottom-10 left-1/2 -ml-8 bg-white p-4 rounded-full"
-                onPress={takePicture}
+                facing={facing}
             >
-                <Text className="text-black font-bold">Snap</Text>
-            </TouchableOpacity>
+                <View className="flex-1 justify-end pb-20">
+                    <View className="flex-row justify-center">
+                        <TouchableOpacity
+                            className="bg-white rounded-full p-4 mx-4"
+                            onPress={toggleCameraFacing}
+                        >
+                            <Text className="text-black font-semibold">Flip</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </CameraView>
         </View>
     );
 }

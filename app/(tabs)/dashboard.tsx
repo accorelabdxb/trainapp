@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
     Animated,
@@ -13,16 +14,24 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Bell } from '../../lib/icons/Bell';
 import { ChevronRight } from '../../lib/icons/ChevronRight';
 import { CircleChevronRight } from '../../lib/icons/CircleChevronRight';
-// If you're using useRouter, make sure it's imported too
-// import { useRouter } from "expo-router";
-
-const handleImageButtonPress = () => {
-    console.log("Image background button pressed!");
-    // Example: If router is used: router.push('/your-target-screen');
-};
-
 const Dashboard = () => {
+    const router = useRouter();
     const waveAnimation = useRef(new Animated.Value(0)).current;
+
+    const handleImageButtonPress = () => {
+        console.log("Image background button pressed!");
+        // Example: If router is used: router.push('/your-target-screen');
+    };
+
+    const handleRedeemPress = () => {
+        console.log("Redeem button pressed!");
+        router.push('/redeem');
+    };
+
+    const handlePointsPress = () => {
+        console.log("Points pressed!");
+        router.push('/redeem');
+    };
 
     useEffect(() => {
         const startWave = () => {
@@ -69,7 +78,7 @@ const Dashboard = () => {
                 shadowRadius: 3.84,
                 elevation: 5,
             }}>
-                <View className="pb-4 px-6 bg-secbg flex flex-row items-center justify-between">
+                <View className="px-6 bg-secbg flex flex-row items-center justify-between">
                     <Image className="h-6 w-36"
                         source={require('../../assets/images/logo.png')}
                     />
@@ -91,6 +100,7 @@ const Dashboard = () => {
             <ScrollView
                 className="flex-1 bg-black"
                 style={{ marginTop: 120 }}
+                contentContainerStyle={{ paddingBottom: 10 }}
                 showsVerticalScrollIndicator={false}
             >
                 <View className="pt-8">
@@ -104,7 +114,11 @@ const Dashboard = () => {
                             </Animated.View>
                         </View>
                     </View>
-                    <TouchableOpacity className="bg-[#303030] p-3 ps-4 rounded-2xl flex flex-row items-center">
+                    <TouchableOpacity 
+                        className="bg-[#303030] p-3 ps-4 rounded-2xl flex flex-row items-center"
+                        onPress={handlePointsPress}
+                        activeOpacity={0.7}
+                    >
                         <Image className="h-8 w-8"
                             source={require('../../assets/images/star.png')}
                         />
@@ -407,7 +421,7 @@ const Dashboard = () => {
                                     <View className="me-4 relative">
                                         <TouchableOpacity
                                             className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                                            onPress={handleImageButtonPress}
+                                            onPress={handleRedeemPress}
                                             activeOpacity={0.7}
                                         >
                                             <Text className="text-white font-bold text-sm px-3">Redeem</Text>
@@ -418,7 +432,7 @@ const Dashboard = () => {
                                     <View className="me-4 relative">
                                         <TouchableOpacity
                                             className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                                            onPress={handleImageButtonPress}
+                                            onPress={handleRedeemPress}
                                             activeOpacity={0.7}
                                         >
                                             <Text className="text-white font-bold text-sm px-3">Redeem</Text>
@@ -429,7 +443,7 @@ const Dashboard = () => {
                                     <View>
                                         <TouchableOpacity
                                             className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                                            onPress={handleImageButtonPress}
+                                            onPress={handleRedeemPress}
                                             activeOpacity={0.7}
                                         >
                                             <Text className="text-white font-bold text-sm px-3">Redeem</Text>

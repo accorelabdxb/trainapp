@@ -68,17 +68,18 @@ const Challenges = () => {
                 elevation: 5,
             }}>
                 <View className="px-6 bg-secbg flex flex-row items-center justify-between">
-                    <Text className="text-white text-3xl font-bold py-4">Challenges</Text>
+                    <Text className="text-white text-3xl font-bold ">Challenges</Text>
                 </View>
             </SafeAreaView>
             
             {/* Scrollable Content with top margin to account for fixed header */}
             <ScrollView
-                className="flex-1 bg-black px-3 pb-16"
-                style={{ marginTop: 120 }} // Increased margin to account for SafeAreaView
+                className="flex-1 bg-black px-3"
+                style={{ marginTop: 120 }}
+                contentContainerStyle={{ paddingBottom: 20 }}
                 showsVerticalScrollIndicator={false}
             >
-                <View className="pt-8">
+                <View className="pt-4">
                     <Text className="text-white font-bold text-xl">My Challenges</Text>
                     <View className="flex flex-row justify-between items-center">
                         <ScrollView

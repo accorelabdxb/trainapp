@@ -594,14 +594,15 @@ const Social = () => {
                 elevation: 5,
             }}>
                 <View className="px-6 bg-secbg flex flex-row items-center justify-between">
-                    <Text className="text-white text-3xl font-bold py-4">Social</Text>
+                    <Text className="text-white text-3xl font-bold">Social</Text>
                 </View>
             </SafeAreaView>
             
             {/* Scrollable Content */}
             <ScrollView 
                 className="flex-1 bg-black px-3" 
-                style={{ marginTop: 120, paddingTop: 16 }}
+                style={{ marginTop: 120, paddingTop: 8 }}
+                contentContainerStyle={{ paddingBottom: 20 }}
                 showsVerticalScrollIndicator={false}
             >
                 <View className="flex-row justify-between">

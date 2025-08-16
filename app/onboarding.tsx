@@ -8,7 +8,7 @@ const Onboarding = () => { // Corrected: This is the main component
 
     // Function to navigate to the Dashboard screen
     const navigateToDashboard = () => {
-        router.push('(tabs)/dashboard'); // Navigate to the '/dashboard' route
+        router.push('/(tabs)/dashboard'); // Navigate to the dashboard route
     };
 
     return (
