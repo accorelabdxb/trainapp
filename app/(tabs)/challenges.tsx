@@ -1,6 +1,14 @@
-import React from "react";
-import { ScrollView, Text, View } from "react-native";
-import Animated, { Easing } from "react-native-reanimated";
+import React, { useEffect, useRef } from "react";
+import {
+  Animated,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { Easing } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const handleImageButtonPress = () => {
