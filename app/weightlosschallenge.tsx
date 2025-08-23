@@ -27,6 +27,8 @@ const participants = [
   { name: "Nihas Latheef", image: require("../assets/images/profile2.jpg") },
 ];
 
+
+
 const screenWidth = Dimensions.get("window").width;
 
 const WeightLossChallenge = () => {
@@ -58,8 +60,8 @@ const WeightLossChallenge = () => {
         <View style={{ width: 44 }} />
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 150 }}>
-        <View style={{ position: "relative" }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+        <View className="relative">
           <Image
             source={require("../assets/images/challenge2.png")}
             className="w-full h-[400px]"
@@ -80,7 +82,7 @@ const WeightLossChallenge = () => {
             </Text>
           </View>
 
-          {/* Logo Card */}
+  
           <View className="absolute right-5 bottom-5 w-[110px] h-[110px] bg-white rounded-[18px] flex justify-center items-center shadow-md">
             <Image
               source={require("../assets/images/traininglogo.png")}

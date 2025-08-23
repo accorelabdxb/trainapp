@@ -16,6 +16,10 @@ const handleImageButtonPress = () => {
   // console.log("Image background button pressed!");
   router.push('/weightlosschallenge');
 };
+const handleImageButtonPress30 = () => {
+  // console.log("Image background button pressed!");
+  router.push('/thirtydaywarrior');
+};
 
 const Challenges = () => {
   // Animation logic for the waving emoji, now correctly inside the component
@@ -96,7 +100,7 @@ const Challenges = () => {
             >
               <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                  <Text className="text-black text-xs">Ends in 3 Days</Text>
+                  <Text className="text-black text-xs">Ends today</Text>
                 </View>
                 <Image
                   className="w-full h-40 rounded-t-2xl"
@@ -104,12 +108,12 @@ const Challenges = () => {
                 />
                 {/* This text was already wrapped, but ensuring no surrounding raw text */}
                 <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
+                 30-Day Warrior
                 </Text>
                 <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
                   <TouchableOpacity
                     className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
+                    onPress={handleImageButtonPress30}
                     activeOpacity={0.7}
                   >
                     <Text className="text-black text-sm px-3">Join</Text>
