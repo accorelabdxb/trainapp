@@ -11,6 +11,7 @@ import {
 import { useProfile } from "../context/hooks/useProfile";
 import { ChevronRight } from "../lib/icons/ChevronRight";
 import { authAPI } from "../utils/api";
+import { tokenManager } from "../utils/tokenManager";
 
 const Onboarding = () => {
   const router = useRouter();
@@ -62,16 +63,31 @@ const Onboarding = () => {
 
       console.log("XXX", JSON.stringify(response, null, 2));
 
-      // Update user with authentication data
-      setUser({
+      // Get the access token from response
+      const accessToken = response.token || response.accessToken;
+
+      if (!accessToken) {
+        throw new Error("No access token received from server");
+      }
+
+      // Validate token format
+      if (!tokenManager.isValidToken(accessToken)) {
+        console.warn("Received invalid token format from server");
+      }
+
+      // Update user with authentication data and store securely
+      const updatedUser = {
         ...user,
         isAuthenticated: response.isOtpVerified,
-        token: response.token || response.accessToken,
+        token: accessToken,
         id: response.userId || response.id,
-      });
+      };
 
+      await setUser(updatedUser);
       setOtpVerified(true);
-      console.log("user", JSON.stringify(user, null, 2));
+
+      console.log("user", JSON.stringify(updatedUser, null, 2));
+
       // Navigate based on profile existence
       if (response?.isOtpVerified) {
         // Navigate to create account screen
@@ -80,6 +96,22 @@ const Onboarding = () => {
       }
     } catch (error: any) {
       console.error("OTP verification error:", JSON.stringify(error, null, 2));
+
+      // Handle token expiration error
+      if (tokenManager.isTokenExpiredError(error)) {
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please log in again.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/"),
+            },
+          ]
+        );
+        return;
+      }
+
       setError(
         error.response?.data?.message || "Invalid OTP. Please try again."
       );
@@ -110,6 +142,22 @@ const Onboarding = () => {
       Alert.alert("Success", "OTP has been resent to your mobile number");
     } catch (error: any) {
       console.error("Resend OTP error:", error);
+
+      // Handle token expiration error
+      if (tokenManager.isTokenExpiredError(error)) {
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please log in again.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/"),
+            },
+          ]
+        );
+        return;
+      }
+
       setError(
         error.response?.data?.message ||
           "Failed to resend OTP. Please try again."

@@ -1,4 +1,11 @@
-import React, { createContext, ReactNode, useContext, useReducer } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useReducer,
+} from "react";
+import { secureStorage } from "../utils/secureStorage";
 
 // Types
 interface UserProfile {
@@ -20,15 +27,17 @@ interface ProfileState {
   error: string | null;
   otpSent: boolean;
   otpVerified: boolean;
+  isInitialized: boolean; // Track if initial auth check is complete
 }
 
 type ProfileAction =
-  | { type: "SET_USER"; payload: UserProfile }
+  | { type: "SET_USER"; payload: UserProfile | null }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null }
   | { type: "SET_OTP_SENT"; payload: boolean }
   | { type: "SET_OTP_VERIFIED"; payload: boolean }
   | { type: "UPDATE_PROFILE"; payload: Partial<UserProfile> }
+  | { type: "SET_INITIALIZED"; payload: boolean }
   | { type: "LOGOUT" }
   | { type: "RESET_STATE" };
 
@@ -39,6 +48,7 @@ const initialState: ProfileState = {
   error: null,
   otpSent: false,
   otpVerified: false,
+  isInitialized: false,
 };
 
 // Reducer
@@ -61,6 +71,9 @@ const profileReducer = (
 
     case "SET_OTP_VERIFIED":
       return { ...state, otpVerified: action.payload };
+
+    case "SET_INITIALIZED":
+      return { ...state, isInitialized: action.payload };
 
     case "UPDATE_PROFILE":
       return {
@@ -90,11 +103,61 @@ const ProfileContext = createContext<{
   dispatch: React.Dispatch<ProfileAction>;
 } | null>(null);
 
-// Provider
+// Provider component
 export const ProfileProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [state, dispatch] = useReducer(profileReducer, initialState);
+
+  // Initialize authentication state on app start
+  useEffect(() => {
+    const initializeAuth = async () => {
+      try {
+        dispatch({ type: "SET_LOADING", payload: true });
+
+        // Check if user is authenticated
+        const isAuthenticated = await secureStorage.isAuthenticated();
+
+        if (isAuthenticated) {
+          // Get stored user data
+          const userData = await secureStorage.getUserData();
+          const token = await secureStorage.getAccessToken();
+
+          if (userData && token) {
+            dispatch({
+              type: "SET_USER",
+              payload: {
+                ...userData,
+                isAuthenticated: true,
+                token,
+              },
+            });
+            dispatch({ type: "SET_OTP_VERIFIED", payload: true });
+          }
+        }
+      } catch (error) {
+        console.error("Error initializing auth:", error);
+        // Clear any corrupted data
+        try {
+          await secureStorage.clearAll();
+        } catch (clearError) {
+          console.error("Error clearing storage:", clearError);
+        }
+      } finally {
+        dispatch({ type: "SET_LOADING", payload: false });
+        dispatch({ type: "SET_INITIALIZED", payload: true });
+      }
+    };
+
+    // Wrap in try-catch to prevent any unhandled errors
+    try {
+      initializeAuth();
+    } catch (error) {
+      console.error("Error in initializeAuth:", error);
+      dispatch({ type: "SET_LOADING", payload: false });
+      dispatch({ type: "SET_INITIALIZED", payload: true });
+    }
+  }, []);
 
   return (
     <ProfileContext.Provider value={{ state, dispatch }}>
@@ -103,11 +166,11 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({
   );
 };
 
-// Custom hook
+// Hook to use the context
 export const useProfileContext = () => {
   const context = useContext(ProfileContext);
   if (!context) {
-    throw new Error("useProfileContext must be used within ProfileProvider");
+    throw new Error("useProfileContext must be used within a ProfileProvider");
   }
   return context;
 };

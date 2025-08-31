@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { useProfile } from "../context/hooks/useProfile";
 import { authAPI } from "../utils/api";
+import { tokenManager } from "../utils/tokenManager";
 
 export default function Home() {
   const router = useRouter();
@@ -44,6 +45,22 @@ export default function Home() {
       router.push("/onboarding");
     } catch (error: any) {
       console.error("Login error:", error);
+
+      // Handle token expiration error
+      if (tokenManager.isTokenExpiredError(error)) {
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please log in again.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/"),
+            },
+          ]
+        );
+        return;
+      }
+
       setError(
         error.response?.data?.message || "Failed to send OTP. Please try again."
       );

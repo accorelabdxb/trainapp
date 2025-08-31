@@ -10,6 +10,7 @@ import {
 } from "react-native";
 import { useProfile } from "../context/hooks/useProfile";
 import { authAPI } from "../utils/api";
+import { tokenManager } from "../utils/tokenManager";
 
 const CreateAccount = () => {
   const router = useRouter();
@@ -55,20 +56,51 @@ const CreateAccount = () => {
 
       console.log(JSON.stringify(response, null, 2));
 
-      // Update user with registration data
-      setUser({
+      // Get the access token from response
+      const accessToken = response.token || response.accessToken;
+
+      if (!accessToken) {
+        throw new Error("No access token received from server");
+      }
+
+      // Validate token format
+      if (!tokenManager.isValidToken(accessToken)) {
+        console.warn("Received invalid token format from server");
+      }
+
+      // Update user with registration data and store securely
+      const updatedUser = {
         ...user,
         id: response.userId || response.id,
         username: username.trim(),
         fullName: fullName.trim(),
         gymId: gymCode.trim(),
-        token: response.token || response.accessToken,
-      });
+        token: accessToken,
+        isAuthenticated: true,
+      };
+
+      await setUser(updatedUser);
 
       // Navigate to dashboard
       router.push("/(tabs)/dashboard");
     } catch (error: any) {
       console.error("Registration error:", JSON.stringify(error, null, 2));
+
+      // Handle token expiration error
+      if (tokenManager.isTokenExpiredError(error)) {
+        Alert.alert(
+          "Session Expired",
+          "Your session has expired. Please log in again.",
+          [
+            {
+              text: "OK",
+              onPress: () => router.replace("/"),
+            },
+          ]
+        );
+        return;
+      }
+
       setError(
         error.response?.data?.message ||
           "Failed to create account. Please try again."

@@ -1,16 +1,49 @@
-import { Slot } from "expo-router";
-import React from "react";
+import { Slot, useRouter, useSegments } from "expo-router";
+import React, { useEffect } from "react";
 import { ErrorBoundary } from "../components/common/ErrorBoundary";
 import { AppProvider } from "../context/AppContext";
-import { ProfileProvider } from "../context/ProfileContext";
+import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
 import "./globals.css";
+
+// Component to handle authentication routing
+const AuthRouter = () => {
+  const router = useRouter();
+  const segments = useSegments();
+  const { state } = useProfileContext();
+  const { user, isInitialized, isLoading } = state;
+
+  useEffect(() => {
+    // Don't redirect while still initializing
+    if (!isInitialized || isLoading) {
+      return;
+    }
+
+    // Ensure segments is available
+    if (!segments) {
+      return;
+    }
+
+    const currentRoute = segments[0];
+    const inAuthGroup = currentRoute === "(tabs)";
+    const inLoginFlow =
+      currentRoute === "onboarding" || currentRoute === "create-account";
+
+    // If user is authenticated and trying to access login screens, redirect to dashboard
+    if (user?.isAuthenticated && user?.token && inLoginFlow) {
+      router.replace("/(tabs)/dashboard");
+      return;
+    }
+  }, [user, isInitialized, isLoading, segments, router]);
+
+  return <Slot />;
+};
 
 export default function RootLayout() {
   return (
     <ErrorBoundary>
       <AppProvider>
         <ProfileProvider>
-          <Slot />
+          <AuthRouter />
         </ProfileProvider>
       </AppProvider>
     </ErrorBoundary>
