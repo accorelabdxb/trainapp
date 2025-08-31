@@ -62,7 +62,6 @@ const CreateAccount = () => {
         username: username.trim(),
         fullName: fullName.trim(),
         gymId: gymCode.trim(),
-        isAuthenticated: true,
         token: response.token || response.accessToken,
       });
 

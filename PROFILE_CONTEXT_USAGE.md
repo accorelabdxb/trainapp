@@ -64,7 +64,7 @@ interface UserProfile {
   email?: string;
   gymId?: string;
   profileDataJson?: any;
-  isAuthenticated: boolean;
+  isOtpVerified: boolean;
   token?: string;
   isProfileExist?: boolean;
 }
@@ -124,7 +124,7 @@ const MyComponent = () => {
     <View>
       <Text>Welcome, {user.mobileNumber}</Text>
       <Text>
-        Status: {user.isAuthenticated ? "Authenticated" : "Not Authenticated"}
+        Status: {user.isOtpVerified ? "Authenticated" : "Not Authenticated"}
       </Text>
     </View>
   );

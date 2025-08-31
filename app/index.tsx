@@ -36,7 +36,6 @@ export default function Home() {
         id: "",
         isProfileExist: response?.success?.isProfileExist,
         mobileNumber: phoneNumber,
-        isAuthenticated: false,
       });
 
       setOtpSent(true);

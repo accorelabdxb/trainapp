@@ -52,6 +52,7 @@ export const authAPI = {
     profileDataJson?: any;
   }) => {
     try {
+      console.log(JSON.stringify(userData, null, 2));
       const response = await api.post("/api/v1/Accounts/register", userData);
       return response.data;
     } catch (error) {

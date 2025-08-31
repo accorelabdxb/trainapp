@@ -16,7 +16,7 @@ const Onboarding = () => {
   const router = useRouter();
   const { user, setLoading, setError, setUser, setOtpVerified, isLoading } =
     useProfile();
-  const [otp, setOtp] = useState(["", "", "", "", ""]);
+  const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<TextInput[]>([]);
 
   // Function to navigate to the Dashboard screen
@@ -40,8 +40,8 @@ const Onboarding = () => {
   const handleVerifyOtp = async () => {
     const otpString = otp.join("");
 
-    if (otpString.length !== 5) {
-      Alert.alert("Error", "Please enter a valid 5-digit OTP");
+    if (otpString.length !== 4) {
+      Alert.alert("Error", "Please enter a valid 4-digit OTP");
       return;
     }
 
@@ -60,26 +60,23 @@ const Onboarding = () => {
       // Verify OTP
       const response = await authAPI.verifyOtp(user.mobileNumber, otpString);
 
-      console.log(JSON.stringify(response, null, 2));
+      console.log("XXX", JSON.stringify(response, null, 2));
 
       // Update user with authentication data
       setUser({
         ...user,
-        isAuthenticated: true,
+        isAuthenticated: response.isOtpVerified,
         token: response.token || response.accessToken,
         id: response.userId || response.id,
-        isProfileExist: response?.success?.isProfileExist,
       });
 
       setOtpVerified(true);
-
+      console.log("user", JSON.stringify(user, null, 2));
       // Navigate based on profile existence
-      if (response?.success?.isProfileExist === false) {
+      if (response?.isOtpVerified) {
         // Navigate to create account screen
-        router.push("/create-account");
-      } else {
-        // Navigate to dashboard
-        navigateToDashboard();
+        if (!user?.isProfileExist) router.push("/create-account");
+        else navigateToDashboard();
       }
     } catch (error: any) {
       console.error("OTP verification error:", JSON.stringify(error, null, 2));
@@ -158,7 +155,7 @@ const Onboarding = () => {
             ref={(ref) => {
               if (ref) inputRefs.current[index] = ref;
             }}
-            className='mt-2 bg-input rounded-xl px-5 text-white text-2xl h-14 w-14 text-center'
+            className='mt-2 bg-input rounded-xl px-5 text-white text-2xl h-20 w-20 text-center'
             keyboardType='numeric'
             returnKeyType='done'
             maxLength={1}
@@ -178,10 +175,10 @@ const Onboarding = () => {
       <TouchableOpacity
         className='mt-4 bg-white h-14 rounded-xl items-center justify-center'
         onPress={handleVerifyOtp}
-        disabled={otp.join("").length !== 5 || isLoading}
-        activeOpacity={otp.join("").length === 5 && !isLoading ? 0.9 : 0.5}
+        disabled={otp.join("").length !== 4 || isLoading}
+        activeOpacity={otp.join("").length === 4 && !isLoading ? 0.9 : 0.5}
         style={{
-          opacity: otp.join("").length !== 5 || isLoading ? 0.5 : 1,
+          opacity: otp.join("").length !== 4 || isLoading ? 0.5 : 1,
         }}>
         <Text className='text-black font-normal text-xl'>
           {isLoading ? "Verifying..." : "Verify OTP"}
