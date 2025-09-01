@@ -87,7 +87,6 @@ export const authAPI = {
 
   // Verify OTP
   verifyOtp: async (mobileNumber: string, otp: string) => {
-    console.log(JSON.stringify({ mobileNumber, otp }, null, 2));
     try {
       const response = await api.post("/api/v1/Accounts/verify-otp", {
         mobileNumber: mobileNumber,
@@ -104,13 +103,12 @@ export const authAPI = {
     mobileNumber: string;
     username?: string;
     fullName?: string;
-    email?: string;
-    plainPassword?: string;
-    gymId?: string;
-    profileDataJson?: any;
+    email?: string | null;
+    plainPassword?: string | null;
+    gymId?: string | null;
+    profileDataJson?: any | null;
   }) => {
     try {
-      console.log(JSON.stringify(userData, null, 2));
       const response = await api.post("/api/v1/Accounts/register", userData);
       return response.data;
     } catch (error) {

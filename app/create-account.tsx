@@ -51,10 +51,11 @@ const CreateAccount = () => {
         mobileNumber: user.mobileNumber,
         username: username.trim(),
         fullName: fullName.trim(),
+        email: null,
+        plainPassword: null,
         gymId: gymCode.trim(),
+        profileDataJson: null,
       });
-
-      console.log(JSON.stringify(response, null, 2));
 
       // Get the access token from response
       const accessToken = response.token || response.accessToken;

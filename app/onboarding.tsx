@@ -61,17 +61,15 @@ const Onboarding = () => {
       // Verify OTP
       const response = await authAPI.verifyOtp(user.mobileNumber, otpString);
 
-      console.log("XXX", JSON.stringify(response, null, 2));
-
       // Get the access token from response
       const accessToken = response.token || response.accessToken;
 
-      if (!accessToken) {
+      if (!accessToken && user.isProfileExist) {
         throw new Error("No access token received from server");
       }
 
       // Validate token format
-      if (!tokenManager.isValidToken(accessToken)) {
+      if (!user.isProfileExist && !tokenManager.isValidToken(accessToken)) {
         console.warn("Received invalid token format from server");
       }
 
@@ -85,8 +83,6 @@ const Onboarding = () => {
 
       await setUser(updatedUser);
       setOtpVerified(true);
-
-      console.log("user", JSON.stringify(updatedUser, null, 2));
 
       // Navigate based on profile existence
       if (response?.isOtpVerified) {
