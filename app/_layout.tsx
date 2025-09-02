@@ -4,6 +4,7 @@ import { ErrorBoundary } from "../components/common/ErrorBoundary";
 import { AppProvider } from "../context/AppContext";
 import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
 import "./globals.css";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
 // Component to handle authentication routing
 const AuthRouter = () => {

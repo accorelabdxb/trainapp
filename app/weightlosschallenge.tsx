@@ -2,6 +2,7 @@ import OctagonAlertIcon from "@/lib/icons/OctaganAlert";
 import { useRouter } from "expo-router";
 import { Calendar, ChevronLeft } from "lucide-react-native";
 import React, { useState } from "react";
+import RNModal from "react-native-modal";
 
 import {
   Dimensions,
@@ -12,6 +13,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  SafeAreaView
 } from "react-native";
 
 const participants = [
@@ -27,8 +29,6 @@ const participants = [
   { name: "Nihas Latheef", image: require("../assets/images/profile2.jpg") },
 ];
 
-
-
 const screenWidth = Dimensions.get("window").width;
 
 const WeightLossChallenge = () => {
@@ -36,7 +36,7 @@ const WeightLossChallenge = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleGoBack = () => {
-       router.push("/challenges");
+    router.push("/challenges");
   };
 
   return (
@@ -51,13 +51,13 @@ const WeightLossChallenge = () => {
         </TouchableOpacity>
 
         <Text
-          className="text-white font-bold text-lg font-sans leading-6 capitalize text-center flex-1"
+          className="text-white font-bold text-lg leading-6 capitalize text-center flex-1"
           numberOfLines={1}
         >
           Weight Loss Challenge
         </Text>
 
-        <View style={{ width: 44 }} />
+        <View className="w-[44px]" />
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
@@ -72,17 +72,16 @@ const WeightLossChallenge = () => {
             <Text className="font-bold text-base text-gray-900 leading-5">
               01
             </Text>
-            <Text style={{ fontSize: 14, color: "#111" }}>May</Text>
+            <Text className="text-[14px] text-[#111]">May</Text>
           </View>
 
           <View className="absolute top-5 right-5 flex flex-row gap-2 items-center bg-white h-7 rounded-[14px] px-[14px] border border-gray-200">
             <OctagonAlertIcon size={16} color="#ff0000" />
-            <Text className="font-sans text-gray-600 font-semibold text-sm text-center capitalize">
+            <Text className=" text-gray-600 font-semibold text-sm text-center capitalize">
               3 Spots Open
             </Text>
           </View>
 
-  
           <View className="absolute right-5 bottom-5 w-[110px] h-[110px] bg-white rounded-[18px] flex justify-center items-center shadow-md">
             <Image
               source={require("../assets/images/traininglogo.png")}
@@ -105,19 +104,17 @@ const WeightLossChallenge = () => {
               />
             ))}
             <View className="w-8 h-8 rounded-full bg-white border-2 border-white -ml-2.5 flex justify-center items-center z-20">
-              <Text style={{ color: "#000", fontWeight: "700", fontSize: 16 }}>
-                +5
-              </Text>
+              <Text className="text-black font-bold text-[16px]">+5</Text>
             </View>
           </TouchableOpacity>
         </View>
 
         {/* Text Section */}
         <View className="px-4">
-          <Text className="text-white font-sans font-bold text-[22px] leading-7 capitalize pt-7">
+          <Text className="text-white font-bold text-[22px] leading-7 capitalize pt-7">
             Weight Loss Challenge
           </Text>
-          <Text className="text-[#9f9f9f] font-sans font-medium text-base leading-6 mt-3">
+          <Text className="text-[#9f9f9f] font-medium text-base leading-6 mt-3">
             Become The Most Consistent Version Of Yourself.{"\n"}
             Build The Habit That Gets Results. Check-In For 30{"\n"}
             Days This Month To Prove Your Dedication.
@@ -126,7 +123,7 @@ const WeightLossChallenge = () => {
           {/* Date Row */}
           <View className="flex flex-row items-center mt-5">
             <Calendar color="#fff" size={22} className="mr-2.5" />
-            <Text className="text-white font-sans font-semibold text-base leading-[22px] px-2.5 py-1 rounded-md">
+            <Text className="text-white font-semibold text-base leading-[22px] px-2.5 py-1 rounded-md">
               01 May 2025 to 30 May 2025
             </Text>
           </View>
@@ -142,27 +139,17 @@ const WeightLossChallenge = () => {
 
         {/* Prize Description */}
         <View className="bg-[#181818] rounded-b-[18px] mx-4 py-5 px-[18px]">
-          <Text
-            style={{
-              fontFamily: "Inter",
-              fontWeight: "600",
-              fontSize: 16,
-              lineHeight: 24,
-              color: "#fff",
-              textTransform: "capitalize",
-              marginBottom: 4,
-            }}
-          >
+          <Text className=" font-semibold text-[16px] leading-[24px] text-white capitalize mb-1">
             The Prize:
           </Text>
-          <Text className="font-sans font-semibold text-base leading-6 text-[#9f9f9f] capitalize mb-1">
+          <Text className=" font-semibold text-base leading-6 text-[#9f9f9f] capitalize mb-1">
             The First 10 Members To Complete The Challenge Will Receive A 2lb
             Tub Of Whey Protein
           </Text>
         </View>
 
         <View style={{ paddingHorizontal: 16 }}>
-          <Text className="text-white font-sans font-bold text-[22px] leading-7 capitalize pb-4 mt-10">
+          <Text className="text-white  font-bold text-[22px] leading-7 capitalize pb-4 mt-10">
             Reward Partner
           </Text>
           <View className="flex flex-row items-center pb-6">
@@ -174,16 +161,16 @@ const WeightLossChallenge = () => {
               />
             </View>
             <View className="ml-6 flex justify-center flex-1">
-              <Text className="font-sans font-semibold text-xl text-white mb-1">
+              <Text className=" font-semibold text-xl text-white mb-1">
                 Leefit Kettlebells
               </Text>
-              <Text className="font-sans font-medium text-base text-[#9f9f9f] leading-[22px]">
+              <Text className=" font-medium text-base text-[#9f9f9f] leading-[22px]">
                 32, Alkhoori Building, 32 Street,
               </Text>
-              <Text className="font-sans font-medium text-base text-[#9f9f9f] leading-[22px]">
+              <Text className=" font-medium text-base text-[#9f9f9f] leading-[22px]">
                 Al Karama, Dubai.
               </Text>
-              <Text className="font-sans font-semibold text-base text-[#9f9f9f] leading-[22px] mt-3">
+              <Text className=" font-semibold text-base text-[#9f9f9f] leading-[22px] mt-3">
                 +971 545 254 896
               </Text>
             </View>
@@ -195,7 +182,7 @@ const WeightLossChallenge = () => {
         </View>
 
         <View className="px-4">
-          <Text className="text-white font-sans font-bold text-[22px] leading-6 capitalize pb-3">
+          <Text className="text-white  font-bold text-[22px] leading-6 capitalize pb-3">
             The Rules
           </Text>
 
@@ -208,7 +195,7 @@ const WeightLossChallenge = () => {
             ].map((rule, i) => (
               <Text
                 key={i}
-                className={`text-[#9f9f9f] font-sans font-medium text-base leading-[26px] ${
+                className={`text-[#9f9f9f]  font-medium text-base leading-[26px] ${
                   i === 3 ? "" : "mb-3"
                 }`}
               >
@@ -219,19 +206,16 @@ const WeightLossChallenge = () => {
         </View>
       </ScrollView>
 
-     
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setModalVisible(false)}
+      <RNModal
+        isVisible={modalVisible}
+          onBackdropPress={() => setModalVisible(false)}
+        style={{ justifyContent: "flex-end", margin: 0 }}
       >
         <View className="flex-1 flex justify-end bg-[rgba(0,0,0,0.55)]">
-          <View className="bg-white rounded-t-[30px] w-full max-h-full px-6 pt-9 pb-9">
-            {/* Modal header */}
+         <View className="bg-white rounded-t-[30px] px-6 pt-6 pb-0">
             <View className="flex flex-row justify-between items-center mb-6">
               <Text
-                className="font-sans font-semibold text-xl capitalize text-black"
+                className=" font-semibold text-xl capitalize text-black"
                 accessibilityRole="header"
               >
                 Participants
@@ -257,7 +241,7 @@ const WeightLossChallenge = () => {
                     className="w-[62px] h-[62px] rounded-full mb-1.5"
                   />
                   <Text
-                    className="text-[#494949] font-sans font-medium text-xs leading-[15px] text-center"
+                    className="text-[#494949]  font-medium text-xs leading-[15px] text-center"
                     numberOfLines={2}
                   >
                     {item.name}
@@ -267,7 +251,7 @@ const WeightLossChallenge = () => {
             />
           </View>
         </View>
-      </Modal>
+      </RNModal>
       <TouchableOpacity
         activeOpacity={0.8}
         className="absolute left-[14px] right-[14px] bottom-[28px] h-[57px] rounded-[51px] bg-white border border-white flex flex-row items-center justify-start shadow-lg px-5"

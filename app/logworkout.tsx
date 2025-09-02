@@ -1,4 +1,4 @@
-import WorkoutSetCard from "@/components/workout/WorkoutSetCard";
+import WorkoutSetCard from "@/components/WorkoutSetCard";
 import ClockIcon from "@/lib/icons/ClockIcon";
 import PlusIcon from "@/lib/icons/PlusIcon";
 import SettingsIcon from "@/lib/icons/SettingsIcon";
@@ -36,12 +36,11 @@ const logworkout = () => {
         </TouchableOpacity>
       </View>
       <View className="pt-8">
-       <View className="flex flex-row items-center justify-between bg-secbg p-4 mx-2 rounded-2xl">
-
+        <View className="flex flex-row items-center justify-between bg-secbg p-4 mx-2 rounded-2xl">
           <View className="flex flex-row items-center gap-3">
             <ClockIcon size={36} />
             <View>
-              <Text className="font-inter font-light text-sm text-[#9f9f9f]">
+              <Text className=" font-light text-sm text-[#9f9f9f]">
                 Duration
               </Text>
               <Text className="font-roboto font-normal text-lg text-white">
@@ -52,7 +51,7 @@ const logworkout = () => {
           <View className="flex flex-row items-center gap-3">
             <SettingsIcon />
             <View>
-              <Text className="font-inter font-light text-sm text-[#9f9f9f]">
+              <Text className="font-light text-sm text-[#9f9f9f]">
                 Sets
               </Text>
               <Text className="font-roboto font-normal text-lg text-white">
@@ -64,7 +63,7 @@ const logworkout = () => {
             <Text className="text-black font-medium">Finish</Text>
           </TouchableOpacity>
         </View>
-        <WorkoutSetCard/>
+        <WorkoutSetCard />
       </View>
     </View>
   );

@@ -1,99 +1,155 @@
-import React, { useState } from "react";
+import * as ImagePicker from "expo-image-picker";
+import React, { useEffect, useState } from "react";
 import {
-  View,
-  TouchableOpacity,
-  Image,
+  Alert,
   FlatList,
+  Image,
   Text,
-  Dimensions,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
-// Dummy images – replace with real gallery assets
-const images = [
-  { id: "1", uri: "https://placekitten.com/300/300" },
-  { id: "2", uri: "https://placekitten.com/301/301" },
-  { id: "3", uri: "https://placekitten.com/302/302" },
-  { id: "4", uri: "https://placekitten.com/303/303" },
-];
-
-const screenWidth = Dimensions.get("window").width;
-
 export default function CameraScreen() {
-  const [selectedImage, setSelectedImage] = useState(images[0].uri);
+  type GalleryImage = { id: string; uri: string };
+  type CameraGridItem = { type: "camera"; id: string };
+  type GridItem = GalleryImage | CameraGridItem;
 
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
-  const gridData = [
-    { type: "camera", id: "camera" },
-    { ...images, type: "selected" },
-    ...images.slice(1).map((img) => ({ ...img, type: "gallery" })),
-  ];
+  useEffect(() => {
+    loadGalleryImages();
+  }, []);
 
-  const handleCameraPress = () => {
-    alert("Open Camera");
+  const loadGalleryImages = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 30,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const images = result.assets.map((asset, index) => ({
+          id: `gallery_${index}_${Date.now()}`,
+          uri: asset.uri,
+        }));
+
+        setGalleryImages(images);
+        setSelectedImage(images[0]?.uri ?? null); // default first image
+      }
+    } catch (error) {
+      console.error("Error loading gallery:", error);
+      Alert.alert("Error", "Failed to load gallery images");
+    }
   };
 
-  function renderGridItem({ item }) {
-    if (item.type === "camera") {
+  const handleCameraPress = async () => {
+    try {
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert("Permission Required", "Camera permission is required");
+        return;
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const newImage = {
+          id: `camera_${Date.now()}`,
+          uri: result.assets[0].uri,
+        };
+
+        setGalleryImages((prev) => [newImage, ...prev]);
+        setSelectedImage(newImage.uri);
+      }
+    } catch (error) {
+      console.error("Camera error:", error);
+      Alert.alert("Error", "Failed to take photo");
+    }
+  };
+
+  const handleImageSelect = (imageUri: string) => {
+    setSelectedImage(imageUri);
+  };
+
+  function renderGridItem({ item, index }: { item: GridItem; index: number }) {
+    // First grid item = Camera
+    if (index === 0 && "type" in item && item.type === "camera") {
       return (
         <TouchableOpacity
-          className="m-1.5 rounded-xl overflow-hidden w-[72px] h-[72px] justify-center items-center"
+          className="m-1 rounded-xl overflow-hidden w-[72px] h-[72px] justify-center items-center bg-black"
           onPress={handleCameraPress}
         >
-          <View className="bg-black w-full h-full rounded-xl justify-center items-center">
-            <Text className="text-white text-2xl">📷</Text>
-          </View>
+          <Text className="text-white text-2xl">📷</Text>
         </TouchableOpacity>
       );
     }
+
     return (
       <TouchableOpacity
-        className={`m-1.5 rounded-xl overflow-hidden w-[72px] h-[72px] justify-center items-center ${
-          item.type === "selected" ? "border-2 border-white" : ""
+        className={`m-1 rounded-xl overflow-hidden w-[72px] h-[72px] ${
+          "uri" in item && item.uri === selectedImage ? "border-2 border-white" : ""
         }`}
-        onPress={() => setSelectedImage(item.uri)}
+        onPress={() => "uri" in item && handleImageSelect(item.uri)}
       >
-        <Image
-          source={{ uri: item.uri }}
-          className="w-full h-full rounded-lg"
-        />
+        {"uri" in item && (
+          <Image
+            source={{ uri: item.uri }}
+            className="w-full h-full"
+            style={{ resizeMode: "cover" }}
+          />
+        )}
       </TouchableOpacity>
     );
   }
 
+  const gridData: GridItem[] = [
+    { type: "camera", id: "camera" },
+    ...galleryImages,
+  ];
+
   return (
-    <View className="flex-1 bg-neutral-900">
-      {/* Top Half: Selected Preview */}
-      <View className="h-[48%] relative">
-        <Image
-          source={{ uri: selectedImage }}
-          className="w-full h-full rounded-b-xl"
-          style={{ resizeMode: "cover" }}
-        />
-        {/* Top row buttons */}
-        <View className="absolute top-10 left-5 right-5 flex-row justify-between items-center">
-          <TouchableOpacity className="bg-black/60 px-3 py-1.5 rounded-full">
-            <Text className="text-white font-bold text-lg">{"<"}</Text>
+    <View className="flex-1 bg-black">
+   
+      <View className="h-[50%] relative">
+        {selectedImage ? (
+          <Image
+            source={{ uri: selectedImage }}
+            className="w-full h-full"
+            style={{ resizeMode: "cover" }}
+          />
+        ) : (
+          <View className="w-full h-full bg-neutral-700 justify-center items-center">
+            <Text className="text-white">No image selected</Text>
+          </View>
+        )}
+
+        {/* Top buttons */}
+        <View className="absolute top-10 left-5 right-5 flex-row justify-between">
+          <TouchableOpacity className="bg-black/50 px-3 py-1 rounded-full">
+            <Text className="text-white text-lg">{"<"}</Text>
           </TouchableOpacity>
-          <TouchableOpacity className="bg-black/60 px-4 py-1.5 rounded-full">
-            <Text className="text-white font-semibold text-lg">Next</Text>
+          <TouchableOpacity className="bg-black/50 px-4 py-1 rounded-full">
+            <Text className="text-white text-lg">Next</Text>
           </TouchableOpacity>
         </View>
       </View>
-      {/* Bottom Half: Gallery Grid */}
-      <View className="flex-1 bg-neutral-800 pt-3">
+
+      {/* Bottom Grid */}
+      <View className="flex-1 bg-neutral-900 pt-2">
         <FlatList
           data={gridData}
           numColumns={4}
           renderItem={renderGridItem}
-          keyExtractor={(item) => {
-            // item.id should always exist, fallback to index if needed
-            return item.id ? item.id.toString() : Math.random().toString();
-          }}
-          contentContainerStyle={{ paddingBottom: 70 }} // So toggle does not cover last row
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 80 }}
         />
-
-        {/* Toggle bottom right, stacked */}
-        <View className="flex-row gap-2 absolute bottom-6 right-4 items-center">
+           <View className="flex-row gap-2 absolute bottom-6 right-4 items-center">
           <TouchableOpacity className="bg-red-600 rounded-full px-7 py-2">
             <Text className="text-white">Photo</Text>
           </TouchableOpacity>

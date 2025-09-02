@@ -242,7 +242,6 @@ const Workout = () => {
         </View>
       </ScrollView>
 
-
       <TouchableOpacity
         className="bg-white rounded-full px-5 py-3 shadow-lg shadow-black/40 absolute bottom-3 right-3"
         activeOpacity={0.8}
@@ -251,103 +250,115 @@ const Workout = () => {
         <Text className="text-black font-semibold text-sm">Add Workout</Text>
       </TouchableOpacity>
 
-     
       <RNModal
         isVisible={isModalVisible}
         onBackdropPress={() => setModalVisible(false)}
         style={{ justifyContent: "flex-end", margin: 0 }}
       >
-        <View className="bg-white rounded-t-3xl p-6 pb-14">
-          <View className="flex flex-row items-center justify-between">
-            <Text className="text-black font-bold text-2xl mb-4">
+        <View className="bg-white rounded-t-3xl p-6">
+          {/* Header */}
+          <View className="flex flex-row items-center justify-between mb-4">
+            <Text className="text-black font-bold text-2xl">
               What’s your workout today?
             </Text>
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
-              className="bg-black rounded-full"
+              className="bg-black rounded-full w-10 h-10 items-center justify-center"
             >
-              <Text className="text-white text-center font-semibold w-12 h-12 pt-3 pe-1">
-                {" "}
-                <X className="text-white" size={20} />{" "}
-              </Text>
+              <X className="text-white" size={20} />
             </TouchableOpacity>
           </View>
+
+          {/* Grid */}
           <View className="flex flex-row items-start justify-between mt-6">
+            {/* Arm */}
             <View className="flex items-center w-4/12">
-              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-15 h-15 p-4 flex items-center justify-center">
+              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-16 h-16 flex items-center justify-center">
                 <Image
                   className="w-10 h-10"
                   source={require("../../assets/images/arms.png")}
                 />
               </TouchableOpacity>
-              <Text className="text-black text-center w-full mt-4 font-semibold">
+              <Text className="text-black text-center w-full mt-3 font-semibold">
                 Arm Muscles
               </Text>
             </View>
+
+            {/* Chest */}
             <View className="flex items-center w-4/12">
-              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-15 h-15 p-4 flex items-center justify-center">
+              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-16 h-16 flex items-center justify-center">
                 <Image
                   className="w-10 h-10"
                   source={require("../../assets/images/chest.png")}
                 />
               </TouchableOpacity>
-              <Text className="text-black text-center w-full mt-4 font-semibold">
+              <Text className="text-black text-center w-full mt-3 font-semibold">
                 Chest Muscles
               </Text>
             </View>
+
+            {/* Abs */}
             <View className="flex items-center w-4/12">
-              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-15 h-15 p-4 flex items-center justify-center">
+              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-16 h-16 flex items-center justify-center">
                 <Image
                   className="w-10 h-10"
                   source={require("../../assets/images/abdomen.png")}
                 />
               </TouchableOpacity>
-              <Text className="text-black text-center w-full mt-4 font-semibold">
+              <Text className="text-black text-center w-full mt-3 font-semibold">
                 Abdominal Muscles
               </Text>
             </View>
           </View>
+
+          {/* Second row */}
           <View className="flex flex-row items-start justify-between mt-6">
+            {/* Back */}
             <View className="flex items-center w-4/12">
-              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-15 h-15 p-4 flex items-center justify-center">
+              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-16 h-16 flex items-center justify-center">
                 <Image
                   className="w-10 h-10"
                   source={require("../../assets/images/back.png")}
                 />
               </TouchableOpacity>
-              <Text className="text-black text-center w-full mt-4 font-semibold">
+              <Text className="text-black text-center w-full mt-3 font-semibold">
                 Back Muscles
               </Text>
             </View>
-            <View className="flex items-center  w-4/12">
-              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-15 h-15 p-4 flex items-center justify-center">
+
+            {/* Glute */}
+            <View className="flex items-center w-4/12">
+              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-16 h-16 flex items-center justify-center">
                 <Image
                   className="w-10 h-10"
                   source={require("../../assets/images/glute.png")}
                 />
               </TouchableOpacity>
-              <Text className="text-black text-center w-full mt-4 font-semibold">
+              <Text className="text-black text-center w-full mt-3 font-semibold">
                 Gluteal Muscles
               </Text>
             </View>
+
+            {/* Legs */}
             <View className="flex items-center w-4/12">
-              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-15 h-15 p-4 flex items-center justify-center">
+              <TouchableOpacity className="rounded-full border-gray-200 border-2 w-16 h-16 flex items-center justify-center">
                 <Image
                   className="w-10 h-10"
                   source={require("../../assets/images/leg.png")}
                 />
               </TouchableOpacity>
-              <Text className="text-black text-center w-full mt-4 font-semibold ">
+              <Text className="text-black text-center w-full mt-3 font-semibold">
                 Lower Limb Muscles
               </Text>
             </View>
           </View>
 
+          {/* Continue Button with spacing */}
           <TouchableOpacity
-            className=" bg-black rounded-full py-4 mt-4"
+            className="bg-black rounded-full py-4 mt-10 mb-6"
             onPress={handleworkoutplan}
           >
-            <Text className="text-white text-center w-full text-lg ">
+            <Text className="text-white text-center text-lg font-semibold">
               Continue
             </Text>
           </TouchableOpacity>

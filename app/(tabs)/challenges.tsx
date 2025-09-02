@@ -14,11 +14,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 const handleImageButtonPress = () => {
   // console.log("Image background button pressed!");
-  router.push('/weightlosschallenge');
+  router.push("/weightlosschallenge");
 };
 const handleImageButtonPress30 = () => {
   // console.log("Image background button pressed!");
-  router.push('/thirtydaywarrior');
+  router.push("/thirtydaywarrior");
 };
 
 const Challenges = () => {
@@ -98,7 +98,7 @@ const Challenges = () => {
                 paddingVertical: 0,
               }}
             >
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                   <Text className="text-black text-xs">Ends today</Text>
                 </View>
@@ -106,42 +106,23 @@ const Challenges = () => {
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge1.png")}
                 />
-                {/* This text was already wrapped, but ensuring no surrounding raw text */}
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                 30-Day Warrior
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress30}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">30-Day Warrior</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress30}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
-                <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                  <Text className="text-black text-xs">Ends in 3 Days</Text>
-                </View>
-                <Image
-                  className="w-full h-40 rounded-t-2xl"
-                  source={require("../../assets/images/challenge2.png")}
-                />
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                   <Text className="text-black text-xs">Ends in 3 Days</Text>
                 </View>
@@ -149,17 +130,44 @@ const Challenges = () => {
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge1.png")}
                 />
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">Refer your buddy</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
+                <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                  <Text className="text-black text-xs">Ends in 3 Days</Text>
+                </View>
+                <Image
+                  className="w-full h-40 rounded-t-2xl"
+                  source={require("../../assets/images/challenge1.png")}
+                />
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">30-Day Warrior</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </ScrollView>
@@ -180,7 +188,7 @@ const Challenges = () => {
                 paddingVertical: 0,
               }}
             >
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                   <Text className="text-black text-xs">Ends in 3 Days</Text>
                 </View>
@@ -188,42 +196,47 @@ const Challenges = () => {
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge1.png")}
                 />
-                {/* This text was already wrapped, but ensuring no surrounding raw text */}
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">Attendence Challenge</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                  <Text className="text-black text-xs">Ends next week</Text>
+                  <Text className="text-black text-xs">Ends in 3 Days</Text>
                 </View>
                 <Image
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge2.png")}
                 />
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Weight loss Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">Weight Loss Challenge</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                   <Text className="text-black text-xs">Ends in 3 Days</Text>
                 </View>
@@ -231,17 +244,20 @@ const Challenges = () => {
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge1.png")}
                 />
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">Attendence Challenge</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </ScrollView>
@@ -262,7 +278,7 @@ const Challenges = () => {
                 paddingVertical: 0,
               }}
             >
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                   <Text className="text-black text-xs">Ends in 3 Days</Text>
                 </View>
@@ -270,42 +286,23 @@ const Challenges = () => {
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge1.png")}
                 />
-                {/* This text was already wrapped, but ensuring no surrounding raw text */}
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">30-Day Warrior</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
-                <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                  <Text className="text-black text-xs">Ends in 3 Days</Text>
-                </View>
-                <Image
-                  className="w-full h-40 rounded-t-2xl"
-                  source={require("../../assets/images/challenge2.png")}
-                />
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
                 <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                   <Text className="text-black text-xs">Ends in 3 Days</Text>
                 </View>
@@ -313,17 +310,44 @@ const Challenges = () => {
                   className="w-full h-40 rounded-t-2xl"
                   source={require("../../assets/images/challenge1.png")}
                 />
-                <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                  Attendance Challenge
-                </Text>
-                <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                  <TouchableOpacity
-                    className="flex flex-row items-center"
-                    onPress={handleImageButtonPress}
-                    activeOpacity={0.7}
-                  >
-                    <Text className="text-black text-sm px-3">Join</Text>
-                  </TouchableOpacity>
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">Attendence Challenge</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+              <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4  relative">
+                <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                  <Text className="text-black text-xs">Ends in 3 Days</Text>
+                </View>
+                <Image
+                  className="w-full h-40 rounded-t-2xl"
+                  source={require("../../assets/images/challenge1.png")}
+                />
+                <View className="px-4">
+                  <View className="mt-4">
+                    <Text className="text-white  ">Attendence Challenge</Text>
+                  </View>
+
+                  <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                    <TouchableOpacity
+                      className="flex flex-row items-center"
+                      onPress={handleImageButtonPress}
+                      activeOpacity={0.7}
+                    >
+                      <Text className="text-black text-sm px-3">Join</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </ScrollView>

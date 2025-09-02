@@ -381,7 +381,7 @@ const Dashboard = () => {
                       <Image
                         className="rounded-xl w-80 h-80"
                         source={require("../../assets/images/ad3.jpg")}
-                      />{" "}
+                      />
                       {/* FIXED PATH HERE */}
                     </View>
                     <View>

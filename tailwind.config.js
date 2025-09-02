@@ -8,7 +8,25 @@ module.exports = {
       colors: {
         input: '#3C3C3C',
         secbg: '#181818'
-      }
+      },
+        fontFamily: {
+          inter: ['Inter', 'sans-serif'],
+        },
+        typography: (theme) => ({
+          DEFAULT: {
+            css: {
+              fontFamily: 'Inter, sans-serif',
+              h1: { fontFamily: 'Inter, sans-serif' },
+              h2: { fontFamily: 'Inter, sans-serif' },
+              h3: { fontFamily: 'Inter, sans-serif' },
+              h4: { fontFamily: 'Inter, sans-serif' },
+              h5: { fontFamily: 'Inter, sans-serif' },
+              h6: { fontFamily: 'Inter, sans-serif' },
+              p: { fontFamily: 'Inter, sans-serif' },
+              span: { fontFamily: 'Inter, sans-serif' },
+            },
+          },
+        }),
     },
   },
   plugins: [],
