@@ -41,12 +41,14 @@ const AuthRouter = () => {
 
 export default function RootLayout() {
   return (
-    <ErrorBoundary>
-      <AppProvider>
-        <ProfileProvider>
-          <AuthRouter />
-        </ProfileProvider>
-      </AppProvider>
-    </ErrorBoundary>
+   <SafeAreaProvider>
+      <ErrorBoundary>
+        <AppProvider>
+          <ProfileProvider>
+            <AuthRouter />
+          </ProfileProvider>
+        </AppProvider>
+      </ErrorBoundary>
+   </SafeAreaProvider>
   );
 }

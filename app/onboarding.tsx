@@ -3,6 +3,7 @@ import React, { useRef, useState } from "react";
 import {
   Alert,
   Image,
+  KeyboardAvoidingView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -169,7 +170,7 @@ const Onboarding = () => {
   };
 
   return (
-    <View className='flex-1 bg-black p-12'>
+    <KeyboardAvoidingView className='flex-1 bg-black p-12'>
       <Image
         className='mt-40'
         source={require("../assets/images/logo.png")}
@@ -245,7 +246,7 @@ const Onboarding = () => {
           size={14}
         />
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   );
 };
 
