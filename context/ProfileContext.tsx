@@ -6,6 +6,7 @@ import React, {
   useReducer,
 } from "react";
 import { secureStorage } from "../utils/secureStorage";
+import { tokenManager } from "../utils/tokenManager";
 
 // Types
 interface UserProfile {
@@ -124,15 +125,27 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({
           const token = await secureStorage.getAccessToken();
 
           if (userData && token) {
-            dispatch({
-              type: "SET_USER",
-              payload: {
-                ...userData,
-                isAuthenticated: true,
-                token,
-              },
-            });
-            dispatch({ type: "SET_OTP_VERIFIED", payload: true });
+            // Validate token before setting user as authenticated
+            if (
+              tokenManager.isValidToken(token) &&
+              !tokenManager.isTokenExpired(token)
+            ) {
+              dispatch({
+                type: "SET_USER",
+                payload: {
+                  ...userData,
+                  isAuthenticated: true,
+                  token,
+                },
+              });
+              dispatch({ type: "SET_OTP_VERIFIED", payload: true });
+            } else {
+              // Token is invalid or expired, clear storage
+              console.warn(
+                "Stored token is invalid or expired, clearing storage"
+              );
+              await secureStorage.clearAll();
+            }
           }
         }
       } catch (error) {
