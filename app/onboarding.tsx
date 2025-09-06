@@ -1,12 +1,16 @@
 import { useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
+  Keyboard,
   KeyboardAvoidingView,
+  Platform,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View,
 } from "react-native";
 import { useProfile } from "../context/hooks/useProfile";
@@ -20,6 +24,42 @@ const Onboarding = () => {
     useProfile();
   const [otp, setOtp] = useState(["", "", "", ""]);
   const inputRefs = useRef<TextInput[]>([]);
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  // Function to dismiss keyboard
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
+  // Handle keyboard events for Android
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      const keyboardDidShowListener = Keyboard.addListener(
+        "keyboardDidShow",
+        () => {
+          // Simple approach: just scroll to end when keyboard shows
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 300);
+        }
+      );
+
+      const keyboardDidHideListener = Keyboard.addListener(
+        "keyboardDidHide",
+        () => {
+          // Scroll back to top when keyboard hides
+          setTimeout(() => {
+            scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+          }, 100);
+        }
+      );
+
+      return () => {
+        keyboardDidShowListener?.remove();
+        keyboardDidHideListener?.remove();
+      };
+    }
+  }, []);
 
   // Function to navigate to the Dashboard screen
   const navigateToDashboard = () => {
@@ -35,6 +75,16 @@ const Onboarding = () => {
     // Auto-focus next input
     if (text && index < 3) {
       inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  // Handle input focus for Android scrolling
+  const handleInputFocus = () => {
+    if (Platform.OS === "android") {
+      // Simple approach: scroll to end when input is focused
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 300);
     }
   };
 
@@ -170,82 +220,108 @@ const Onboarding = () => {
   };
 
   return (
-    <KeyboardAvoidingView className='flex-1 bg-black p-12'>
-      <Image
-        className='mt-40'
-        source={require("../assets/images/logo.png")}
-      />
-      <View className='mt-20'>
-        <Text className='text-white font-bold text-4xl mt-10'>Enter OTP</Text>
-        <Text className='text-white/50'>
-          OTP Sent to{" "}
-          <Text className='font-bold text-white'>
-            {user?.mobileNumber || "0546787653"}
-          </Text>
-        </Text>
-        <TouchableOpacity className='mt-4 bg-input py-1 px-4 rounded-full w-52 justify-between flex flex-row items-center'>
-          <Text className='text-white font-normal text-sm'>
-            Update Mobile Number
-          </Text>
-          <ChevronRight
-            className='text-white'
-            size={14}
-          />
-        </TouchableOpacity>
-      </View>
-      <View className='mt-10 flex flex-row items-center justify-between'>
-        {otp.map((digit, index) => (
-          <TextInput
-            key={index}
-            ref={(ref) => {
-              if (ref) inputRefs.current[index] = ref;
-            }}
-            className='mt-2 bg-input rounded-xl px-5 text-white text-2xl h-20 w-20 text-center'
-            keyboardType='numeric'
-            returnKeyType='done'
-            maxLength={1}
-            value={digit}
-            onChangeText={(text) => handleOtpChange(text, index)}
-            onKeyPress={({ nativeEvent }) => {
-              if (nativeEvent.key === "Backspace" && !digit && index > 0) {
-                inputRefs.current[index - 1]?.focus();
-              }
-            }}
-            editable={!isLoading}
-          />
-        ))}
-      </View>
+    <KeyboardAvoidingView
+      className='flex-1 bg-black'
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      enabled={Platform.OS === "ios"}>
+      <TouchableWithoutFeedback onPress={dismissKeyboard}>
+        <ScrollView
+          ref={scrollViewRef}
+          className='flex-1 bg-black'
+          contentContainerStyle={{
+            flexGrow: 1,
+            paddingBottom: Platform.OS === "android" ? 240 : 0,
+          }}
+          keyboardShouldPersistTaps='handled'
+          showsVerticalScrollIndicator={false}
+          bounces={false}>
+          <View className='flex-1 bg-black p-12'>
+            <Image
+              className='mt-40'
+              source={require("../assets/images/logo.png")}
+            />
+            <View className='mt-20'>
+              <Text className='text-white font-bold text-4xl mt-10'>
+                Enter OTP
+              </Text>
+              <Text className='text-white/50'>
+                OTP Sent to{" "}
+                <Text className='font-bold text-white'>
+                  {user?.mobileNumber || "0546787653"}
+                </Text>
+              </Text>
+              <TouchableOpacity className='mt-4 bg-input py-1 px-4 rounded-full w-52 justify-between flex flex-row items-center'>
+                <Text className='text-white font-normal text-sm'>
+                  Update Mobile Number
+                </Text>
+                <ChevronRight
+                  className='text-white'
+                  size={14}
+                />
+              </TouchableOpacity>
+            </View>
+            <View className='mt-10 flex flex-row items-center justify-between'>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  ref={(ref) => {
+                    if (ref) inputRefs.current[index] = ref;
+                  }}
+                  className='mt-2 bg-input rounded-xl px-5 text-white text-2xl h-20 w-20 text-center'
+                  keyboardType='numeric'
+                  returnKeyType='done'
+                  maxLength={1}
+                  value={digit}
+                  onChangeText={(text) => handleOtpChange(text, index)}
+                  onFocus={handleInputFocus}
+                  onKeyPress={({ nativeEvent }) => {
+                    if (
+                      nativeEvent.key === "Backspace" &&
+                      !digit &&
+                      index > 0
+                    ) {
+                      inputRefs.current[index - 1]?.focus();
+                    }
+                  }}
+                  editable={!isLoading}
+                />
+              ))}
+            </View>
 
-      {/* "Verify OTP" button with navigation */}
-      <TouchableOpacity
-        className='mt-4 bg-white h-14 rounded-xl items-center justify-center'
-        onPress={handleVerifyOtp}
-        disabled={otp.join("").length !== 4 || isLoading}
-        activeOpacity={otp.join("").length === 4 && !isLoading ? 0.9 : 0.5}
-        style={{
-          opacity: otp.join("").length !== 4 || isLoading ? 0.5 : 1,
-        }}>
-        <Text className='text-black font-normal text-xl'>
-          {isLoading ? "Verifying..." : "Verify OTP"}
-        </Text>
-      </TouchableOpacity>
+            {/* "Verify OTP" button with navigation */}
+            <TouchableOpacity
+              className={`mt-4 h-14 rounded-xl items-center justify-center ${
+                otp.join("").length !== 4 || isLoading
+                  ? "bg-gray-400"
+                  : "bg-white"
+              }`}
+              onPress={handleVerifyOtp}
+              disabled={otp.join("").length !== 4 || isLoading}
+              activeOpacity={0.8}>
+              <Text className='text-black font-normal text-xl'>
+                {isLoading ? "Verifying..." : "Verify OTP"}
+              </Text>
+            </TouchableOpacity>
 
-      <TouchableOpacity
-        className='mt-16 bg-input py-1 px-4 rounded-full w-36 justify-between flex flex-row items-center mx-auto'
-        activeOpacity={0.9}
-        onPress={handleResendOtp}
-        disabled={isLoading}
-        style={{
-          opacity: isLoading ? 0.5 : 1,
-        }}>
-        <Text className='text-white font-normal text-sm'>
-          {isLoading ? "Sending..." : "Resend OTP"}
-        </Text>
-        <ChevronRight
-          className='text-white'
-          size={14}
-        />
-      </TouchableOpacity>
+            <TouchableOpacity
+              className={`mt-16 py-1 px-4 rounded-full w-36 justify-between flex flex-row items-center mx-auto ${
+                isLoading ? "bg-gray-600" : "bg-input"
+              }`}
+              activeOpacity={0.9}
+              onPress={handleResendOtp}
+              disabled={isLoading}>
+              <Text className='text-white font-normal text-sm'>
+                {isLoading ? "Sending..." : "Resend OTP"}
+              </Text>
+              <ChevronRight
+                className='text-white'
+                size={14}
+              />
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };
