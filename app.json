@@ -49,7 +49,16 @@
           "backgroundColor": "#ffffff"
         }
       ],
-       [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true,
+            "networkSecurityConfig": "./plugins/network_security_config.xml"
+          }
+        }
+      ],
+      [
         "expo-media-library",
         {
           "photosPermission": "Allow $(PRODUCT_NAME) to access your photos.",
