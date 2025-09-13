@@ -79,6 +79,7 @@ export default function Home() {
 
       // Send OTP
       const response = await authAPI.sendOtp(phoneNumber);
+      console.log("res::",response)
       // Store phone number in profile context
       setUser({
         id: "",

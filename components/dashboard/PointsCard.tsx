@@ -6,9 +6,10 @@ import { formatPoints } from "../../utils/codeGenerator";
 
 interface PointsCardProps {
   onPress: () => void;
+  coinsEarned?: number; // Add this prop
 }
 
-export const PointsCard: React.FC<PointsCardProps> = ({ onPress }) => {
+export const PointsCard: React.FC<PointsCardProps> = ({ onPress,coinsEarned = 0  }) => {
   const { user } = useUser();
 
   if (!user) return null;
@@ -24,7 +25,7 @@ export const PointsCard: React.FC<PointsCardProps> = ({ onPress }) => {
         source={require("../../assets/images/star.png")}
       />
       <Text className="text-white text-xl font-bold ms-2">
-        {formatPoints(user.points)}
+       {formatPoints(coinsEarned)}
       </Text>
       <ChevronRight className="text-white" size={20} strokeWidth={1} />
     </TouchableOpacity>
