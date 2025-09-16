@@ -65,6 +65,9 @@ const Onboarding = () => {
   const navigateToDashboard = () => {
     router.push("/(tabs)/dashboard");
   };
+  const updateMobileNumber = () => {
+    router.push("/");
+  }
 
   // Handle OTP input change
   const handleOtpChange = (text: string, index: number) => {
@@ -251,7 +254,9 @@ const Onboarding = () => {
                   {user?.mobileNumber || "0546787653"}
                 </Text>
               </Text>
-              <TouchableOpacity className='mt-4 bg-input py-1 px-4 rounded-full w-52 justify-between flex flex-row items-center'>
+              <TouchableOpacity 
+                 onPress={updateMobileNumber}
+               className='mt-4 bg-input py-1 px-4 rounded-full w-52 justify-between flex flex-row items-center'>
                 <Text className='text-white font-normal text-sm'>
                   Update Mobile Number
                 </Text>
