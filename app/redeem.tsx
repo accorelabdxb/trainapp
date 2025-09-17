@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   Dimensions,
@@ -21,6 +21,7 @@ const Redeem = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [redeemCode, setRedeemCode] = useState("");
+  const { coins } = useLocalSearchParams();
 
   const { width: screenWidth } = Dimensions.get("window");
 
@@ -142,7 +143,7 @@ const Redeem = () => {
                   Your Points
                 </Text>
                 <Text className="text-amber-400 text-6xl font-light text-center">
-                  {DEFAULT_POINTS_BALANCE}
+                  {coins}
                 </Text>
               </View>
             </View>

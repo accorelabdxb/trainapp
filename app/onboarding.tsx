@@ -67,19 +67,19 @@ const Onboarding = () => {
   };
   const updateMobileNumber = () => {
     router.push("/");
-  }
+  };
 
   // Handle OTP input change
-  const handleOtpChange = (text: string, index: number) => {
-    const newOtp = [...otp];
-    newOtp[index] = text;
-    setOtp(newOtp);
+  // const handleOtpChange = (text: string, index: number) => {
+  //   const newOtp = [...otp];
+  //   newOtp[index] = text;
+  //   setOtp(newOtp);
 
-    // Auto-focus next input
-    if (text && index < 3) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
+  //   // Auto-focus next input
+  //   if (text && index < 3) {
+  //     inputRefs.current[index + 1]?.focus();
+  //   }
+  // };
 
   // Handle input focus for Android scrolling
   const handleInputFocus = () => {
@@ -222,63 +222,103 @@ const Onboarding = () => {
     }
   };
 
+  const handlePaste = (text: string, index: number) => {
+    // Check if pasted text contains multiple digits
+    if (text.length > 1) {
+      const digits = text
+        .replace(/[^0-9]/g, "")
+        .split("")
+        .slice(0, 4);
+      const newOtp = ["", "", "", ""];
+
+      // Fill the OTP array starting from the current index
+      digits.forEach((digit, i) => {
+        if (i < 4) {
+          newOtp[i] = digit;
+        }
+      });
+
+      setOtp(newOtp);
+
+      // Focus the last filled input or the next empty one
+      const nextIndex = Math.min(digits.length - 1, 3);
+      setTimeout(() => {
+        inputRefs.current[nextIndex]?.focus();
+      }, 50);
+
+      return;
+    }
+
+    // Handle single character input (normal typing)
+    // Ensure only single digit is allowed
+    const singleDigit = text.replace(/[^0-9]/g, "").slice(0, 1);
+    const newOtp = [...otp];
+    newOtp[index] = singleDigit;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (singleDigit && index < 3) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
   return (
     <KeyboardAvoidingView
-      className='flex-1 bg-black'
+      className="flex-1 bg-black"
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      enabled={Platform.OS === "ios"}>
+      enabled={Platform.OS === "ios"}
+    >
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <ScrollView
           ref={scrollViewRef}
-          className='flex-1 bg-black'
+          className="flex-1 bg-black"
           contentContainerStyle={{
             flexGrow: 1,
             paddingBottom: Platform.OS === "android" ? 240 : 0,
           }}
-          keyboardShouldPersistTaps='handled'
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          bounces={false}>
-          <View className='flex-1 bg-black p-12'>
+          bounces={false}
+        >
+          <View className="flex-1 bg-black p-12">
             <Image
-              className='mt-40'
+              className="mt-40"
               source={require("../assets/images/logo.png")}
             />
-            <View className='mt-20'>
-              <Text className='text-white font-bold text-4xl mt-10'>
+            <View className="mt-20">
+              <Text className="text-white font-bold text-4xl mt-10">
                 Enter OTP
               </Text>
-              <Text className='text-white/50'>
+              <Text className="text-white/50">
                 OTP Sent to{" "}
-                <Text className='font-bold text-white'>
+                <Text className="font-bold text-white">
                   {user?.mobileNumber || "0546787653"}
                 </Text>
               </Text>
-              <TouchableOpacity 
-                 onPress={updateMobileNumber}
-               className='mt-4 bg-input py-1 px-4 rounded-full w-52 justify-between flex flex-row items-center'>
-                <Text className='text-white font-normal text-sm'>
+              <TouchableOpacity
+                onPress={updateMobileNumber}
+                className="mt-4 bg-input py-1 px-4 rounded-full w-52 justify-between flex flex-row items-center"
+              >
+                <Text className="text-white font-normal text-sm">
                   Update Mobile Number
                 </Text>
-                <ChevronRight
-                  className='text-white'
-                  size={14}
-                />
+                <ChevronRight className="text-white" size={14} />
               </TouchableOpacity>
             </View>
-            <View className='mt-10 flex flex-row items-center justify-between'>
+            <View className="mt-10 flex flex-row items-center justify-between">
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
                   ref={(ref) => {
                     if (ref) inputRefs.current[index] = ref;
                   }}
-                  className='mt-2 bg-input rounded-xl px-5 text-white text-2xl h-20 w-20 text-center'
-                  keyboardType='numeric'
-                  returnKeyType='done'
-                  maxLength={1}
+                  className="mt-2 bg-input rounded-xl px-5 text-white text-2xl h-20 w-20 text-center"
+                  keyboardType="numeric"
+                  returnKeyType="done"
+                  // maxLength={1}
                   value={digit}
-                  onChangeText={(text) => handleOtpChange(text, index)}
+                  onChangeText={(text) => handlePaste(text, index)} // Changed this line
                   onFocus={handleInputFocus}
                   onKeyPress={({ nativeEvent }) => {
                     if (
@@ -303,8 +343,9 @@ const Onboarding = () => {
               }`}
               onPress={handleVerifyOtp}
               disabled={otp.join("").length !== 4 || isLoading}
-              activeOpacity={0.8}>
-              <Text className='text-black font-normal text-xl'>
+              activeOpacity={0.8}
+            >
+              <Text className="text-black font-normal text-xl">
                 {isLoading ? "Verifying..." : "Verify OTP"}
               </Text>
             </TouchableOpacity>
@@ -315,14 +356,12 @@ const Onboarding = () => {
               }`}
               activeOpacity={0.9}
               onPress={handleResendOtp}
-              disabled={isLoading}>
-              <Text className='text-white font-normal text-sm'>
+              disabled={isLoading}
+            >
+              <Text className="text-white font-normal text-sm">
                 {isLoading ? "Sending..." : "Resend OTP"}
               </Text>
-              <ChevronRight
-                className='text-white'
-                size={14}
-              />
+              <ChevronRight className="text-white" size={14} />
             </TouchableOpacity>
           </View>
         </ScrollView>

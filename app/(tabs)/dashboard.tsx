@@ -31,9 +31,13 @@ const Dashboard = () => {
     router.push("/redeem");
   };
 
-  const handlePointsPress = () => {
+const handlePointsPress = () => {
     console.log("Points pressed!");
-    router.push("/redeem");
+    // Pass the coinsEarned state as a parameter
+    router.push({
+      pathname: "/redeem",
+      params: { coins: coinsEarned },
+    });
   };
 
   const daysOfWeek = Array.from({ length: 7 }).map((_, i) =>
