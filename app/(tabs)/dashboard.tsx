@@ -1,6 +1,10 @@
+import { LogoutButton } from "@/components/common/LogoutButton";
+import { useProfile } from "@/context/hooks/useProfile";
+import { attendanceAPI } from "@/utils/api";
 import { useRouter } from "expo-router";
-import React, { useEffect, useCallback } from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View, ActivityIndicator } from "react-native";
+import moment from "moment";
+import React, { useEffect } from "react";
+import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatCard } from "../../components/common/StatCard";
 import { PointsCard } from "../../components/dashboard/PointsCard";
@@ -8,9 +12,6 @@ import { UserGreeting } from "../../components/dashboard/UserGreeting";
 import { workoutStats } from "../../data/mockData";
 import { Bell } from "../../lib/icons/Bell";
 import { CircleChevronRight } from "../../lib/icons/CircleChevronRight";
-import { useProfile } from "@/context/hooks/useProfile";
-import moment from "moment";
-import { attendanceAPI } from "@/utils/api";
 
 const Dashboard = () => {
   const router = useRouter();
@@ -500,7 +501,9 @@ const handlePointsPress = () => {
               </View>
             </View>
           </View>
-        </View>
+          <LogoutButton />
+          </View>
+        
       </ScrollView>
     </View>
   );

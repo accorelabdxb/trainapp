@@ -68,6 +68,7 @@ export default function Home() {
   };
 
   const handleLogin = async () => {
+    console.log("handleLogin", phoneNumber);
     if (!phoneNumber || phoneNumber.length < 10) {
       Alert.alert("Error", "Please enter a valid phone number");
       return;
@@ -79,7 +80,7 @@ export default function Home() {
 
       // Send OTP
       const response = await authAPI.sendOtp(phoneNumber);
-      console.log("res::",response)
+      console.log("res::", response);
       // Store phone number in profile context
       setUser({
         id: "",
@@ -92,7 +93,7 @@ export default function Home() {
       // Navigate to onboarding
       router.push("/onboarding");
     } catch (error: any) {
-      console.error("Login error:", error);
+      console.error("Login error:", JSON.stringify(error));
 
       // Handle token expiration error
       if (tokenManager.isTokenExpiredError(error)) {

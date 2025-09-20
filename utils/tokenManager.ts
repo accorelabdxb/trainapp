@@ -1,4 +1,5 @@
 import { secureStorage } from "./secureStorage";
+import { authEvents } from "./authEvents";
 
 export class TokenExpiredError extends Error {
   constructor(message: string = "Token has expired") {
@@ -24,6 +25,9 @@ export const tokenManager = {
     try {
       // Clear all stored authentication data
       await secureStorage.clearAll();
+
+      // Broadcast logout event so UI/state can react
+      authEvents.triggerLogout();
 
       // Throw a specific error that components can catch
       throw new TokenExpiredError();

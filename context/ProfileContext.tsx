@@ -7,6 +7,7 @@ import React, {
 } from "react";
 import { secureStorage } from "../utils/secureStorage";
 import { tokenManager } from "../utils/tokenManager";
+import { authEvents } from "../utils/authEvents";
 
 // Types
 interface UserProfile {
@@ -170,6 +171,24 @@ export const ProfileProvider: React.FC<{ children: ReactNode }> = ({
       dispatch({ type: "SET_LOADING", payload: false });
       dispatch({ type: "SET_INITIALIZED", payload: true });
     }
+  }, []);
+
+  // Subscribe to global logout events (e.g., token expiration)
+  useEffect(() => {
+    const unsubscribe = authEvents.addLogoutListener(async () => {
+      try {
+        // Ensure storage is cleared (idempotent if already cleared)
+        await secureStorage.clearAll();
+      } catch (e) {
+        console.error("Error clearing storage on logout event:", e);
+      } finally {
+        dispatch({ type: "LOGOUT" });
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
   }, []);
 
   return (
