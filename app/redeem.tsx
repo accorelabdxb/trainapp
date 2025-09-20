@@ -15,6 +15,7 @@ import { CONFETTI_COUNT, DEFAULT_POINTS_BALANCE } from "../constants";
 import { CircleChevronRight } from "../lib/icons/CircleChevronRight";
 import { X } from "../lib/icons/X";
 import { Product } from "../types";
+import { ChevronLeft } from "lucide-react-native";
 const Redeem = () => {
   const router = useRouter();
   const confettiRef = useRef<ConfettiCannon>(null);
@@ -113,10 +114,10 @@ const Redeem = () => {
         <View className="px-6 bg-secbg flex flex-row items-center justify-between">
           <TouchableOpacity
             onPress={handleGoBack}
-            className="flex-row items-center"
+                 className="w-11 h-11 bg-white rounded-full border-2 border-black flex justify-center items-center"
+          activeOpacity={0.7}
           >
-            <Text className="text-white text-2xl mr-2">←</Text>
-            <Text className="text-white text-lg font-medium">Back</Text>
+            <ChevronLeft size={24} color="#000" />
           </TouchableOpacity>
           <Text className="text-white text-xl font-bold">Redeem Points</Text>
           <View className="w-16"></View>

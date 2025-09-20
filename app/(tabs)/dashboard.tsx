@@ -30,6 +30,9 @@ const Dashboard = () => {
     console.log("Redeem button pressed!");
     router.push("/redeem");
   };
+  const handleAttendanceSummaryPress = () => {
+  router.push("/attendancesummary");  
+};
 
 const handlePointsPress = () => {
     console.log("Points pressed!");
@@ -174,6 +177,7 @@ const handlePointsPress = () => {
                 Consistency is Your Superpower! 💪
               </Text>
               <CircleChevronRight
+               onPress={handleAttendanceSummaryPress}
                 className="text-white/70"
                 size={18}
                 strokeWidth={1.5}
