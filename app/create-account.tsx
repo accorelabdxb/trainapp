@@ -54,8 +54,8 @@ const CreateAccount = () => {
         mobileNumber: user.mobileNumber,
         username: username.trim(),
         fullName: fullName.trim(),
-        email: null,
-        plainPassword: null,
+        email:"",
+        plainPassword:"",
         gymId: gymCode.trim(),
         profileDataJson: null,
       });
