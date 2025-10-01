@@ -1,58 +1,236 @@
-import { BASE_FILE_URL, communityAPI } from "@/utils/api";
-import { ResizeMode, Video } from "expo-av";
-import { ArrowLeftCircle, Heart } from "lucide-react-native";
 import React, { useEffect, useRef, useState } from "react";
+import { ResizeMode, Video } from "expo-av";
+import { ArrowLeftCircle, Heart, ExternalLink } from "lucide-react-native";
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   Image,
   Modal,
+  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { BASE_FILE_URL, communityAPI } from "@/utils/api";
+
+type ServerPost = {
+  id: number;
+  userId: number;
+  content: string;
+  fileFullpath: string;
+  fileType: string;
+  fileName: string;
+  imageUploadedAt?: string;
+  createdAt?: string;
+  timeAgo?: string;
+  creatorName?: string;
+  reactionsSummary?: { heart: number; like: number; fire: number };
+  userReaction?: "heart" | "like" | "fire" | null;
+};
 
 type Post = {
   id: number;
-  fileFullpath: string;
-  fileName: string;
+  mediaUri: string;
   mediaType: "image" | "video";
-  creatorName: string;
-  createdAt: string;
-  likeCount: number;
-  isLiked: boolean; // Add this to track the user's like status
+  user: string;
+  time: string;
+  content?: string;
+  fileType?: string;
+  serverPost?: ServerPost;
+  reactionsSummary?: { heart: number; like: number; fire: number };
+  userReaction?: "heart" | "like" | "fire" | null;
+};
+
+const ReactionDisplay = ({
+  reactionsSummary,
+}: {
+  reactionsSummary: Post["reactionsSummary"];
+}) => {
+  if (
+    !reactionsSummary ||
+    (reactionsSummary.heart === 0 &&
+      reactionsSummary.like === 0 &&
+      reactionsSummary.fire === 0)
+  ) {
+    return null;
+  }
+
+  return (
+    <View
+      className="absolute bottom-2 right-2 flex-row items-center bg-black/50 rounded-full px-1.5 py-0.5"
+      style={{ height: 20 }}
+    >
+      {reactionsSummary.heart > 0 && <Text style={{ fontSize: 11 }}>❤️</Text>}
+      {reactionsSummary.like > 0 && <Text style={{ fontSize: 11 }}>👍</Text>}
+      {reactionsSummary.fire > 0 && <Text style={{ fontSize: 11 }}>🔥</Text>}
+    </View>
+  );
 };
 
 const Social = () => {
+  const [posts, setPosts] = useState<Post[]>([]);
   const [imageHeights, setImageHeights] = useState<{ [key: number]: number }>(
     {}
   );
-  const [selectedImage, setSelectedImage] = useState<Post | null>(null);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [showFullScreen, setShowFullScreen] = useState(false);
   const [videoDimensions, setVideoDimensions] = useState<{
     [key: number]: { width: number; height: number };
   }>({});
-  const [videoLoadingStates, setVideoLoadingStates] = useState<{
-    [key: number]: boolean;
-  }>({});
   const [showVideoControls, setShowVideoControls] = useState(false);
-  const videoControlsTimeoutRef = useRef<NodeJS.Timeout | number | null>(null);
+  const videoControlsTimeoutRef = useRef<number | null>(null);
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height;
-  const animatedScale = useRef(new Animated.Value(0)).current;
-  const animatedOpacity = useRef(new Animated.Value(0)).current;
+  const animatedScale = React.useRef(new Animated.Value(0)).current;
+  const animatedOpacity = React.useRef(new Animated.Value(0)).current;
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
-  const [postReaction, setPostReaction] = useState<{ [key: number]: string }>(
-    {}
-  );
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   const videoRef = useRef<Video>(null);
+
+  // --- SCROLL FIX 1: Create a ref for the ScrollView ---
+  const scrollViewRef = useRef<ScrollView>(null);
+
+  const getFileUrl = (fileFullpath: string) => {
+    if (!fileFullpath) return "";
+    return (
+      BASE_FILE_URL +
+      fileFullpath
+        .split("/")
+        .map((seg) => encodeURIComponent(seg))
+        .join("/")
+    );
+  };
+
+  const fetchPosts = async () => {
+    setLoading(true);
+    try {
+      const res = await communityAPI.getAllPosts();
+      const mapped: Post[] = (res || []).map((p: ServerPost) => {
+        const isVideo = p.fileType?.toLowerCase().includes("video");
+        return {
+          id: p.id,
+          mediaUri: getFileUrl(p.fileFullpath),
+          mediaType: isVideo ? "video" : "image",
+          user: p.creatorName || "Unknown",
+          time: p.timeAgo || "",
+          content: p.content,
+          fileType: p.fileType,
+          serverPost: p,
+          reactionsSummary: p.reactionsSummary,
+          userReaction: p.userReaction,
+        };
+      });
+
+      setPosts(mapped);
+
+      const columnWidth = (screenWidth - 24) / 2;
+
+      mapped.forEach((post) => {
+        if (post.mediaType === "image" && post.mediaUri) {
+          Image.getSize(
+            post.mediaUri,
+            (width, height) => {
+              const ratio = height / width;
+              setImageHeights((prev) => ({
+                ...prev,
+                [post.id]: ratio * columnWidth,
+              }));
+            },
+            (err) => {
+              setImageHeights((prev) => ({
+                ...prev,
+                [post.id]: columnWidth * (3 / 4),
+              }));
+            }
+          );
+        } else {
+          setImageHeights((prev) => ({
+            ...prev,
+            [post.id]: columnWidth * (9 / 16),
+          }));
+          setVideoDimensions((prev) => ({
+            ...prev,
+            [post.id]: { width: 16, height: 9 },
+          }));
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching community posts:", error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts();
+  }, []);
+
+  const handleReact = async (
+    postId: number,
+    reactionName: "heart" | "like" | "fire"
+  ) => {
+    const reactionTypeMap = { heart: 1, like: 2, fire: 3 };
+    const reactionType = reactionTypeMap[reactionName];
+
+    const originalPosts = [...posts];
+    const postIndex = originalPosts.findIndex((p) => p.id === postId);
+    if (postIndex === -1) return;
+
+    const postToUpdate = { ...originalPosts[postIndex] };
+    const currentReaction = postToUpdate.userReaction;
+
+    const newSummary = {
+      heart: 0,
+      like: 0,
+      fire: 0,
+      ...postToUpdate.reactionsSummary,
+    };
+
+    if (currentReaction === reactionName) {
+      postToUpdate.userReaction = null;
+      newSummary[reactionName] = Math.max(0, newSummary[reactionName] - 1);
+    } else {
+      if (currentReaction) {
+        newSummary[currentReaction] = Math.max(
+          0,
+          newSummary[currentReaction] - 1
+        );
+      }
+      postToUpdate.userReaction = reactionName;
+      newSummary[reactionName] = newSummary[reactionName] + 1;
+    }
+
+    postToUpdate.reactionsSummary = newSummary;
+
+    const newPosts = [...originalPosts];
+    newPosts[postIndex] = postToUpdate;
+
+    setPosts(newPosts);
+
+    if (selectedPost && selectedPost.id === postId) {
+      setSelectedPost(postToUpdate);
+    }
+
+    try {
+      if (postToUpdate.userReaction === null) {
+        await communityAPI.removeReaction(postId);
+      } else {
+        await communityAPI.addOrUpdateReaction(postId, reactionType);
+      }
+    } catch (error) {
+      console.error("Failed to update reaction:", error);
+      setPosts(originalPosts);
+      if (selectedPost && selectedPost.id === postId) {
+        setSelectedPost(originalPosts[postIndex]);
+      }
+    }
+  };
 
   const openFullScreen = () => {
     setShowFullScreen(true);
@@ -91,374 +269,171 @@ const Social = () => {
     });
   };
 
-  // Calculate image heights based on actual image dimensions
-  const calculateImageHeight = async (uri: string, postId: number) => {
-    return new Promise<void>((resolve) => {
-      Image.getSize(
-        uri,
-        (width, height) => {
-          const ratio = height / width;
-          const columnWidth = 180;
-          const calculatedHeight = ratio * columnWidth;
+  const handleSelectPost = async (post: Post) => {
+    setShowVideoControls(false);
 
-          setImageHeights((prev) => ({
-            ...prev,
-            [postId]: Math.max(calculatedHeight, 150), // Minimum height of 150
-          }));
-          resolve();
-        },
-        (error) => {
-          console.log("Error getting image size:", error);
-          // Set default height if image size calculation fails
-          setImageHeights((prev) => ({
-            ...prev,
-            [postId]: 200,
-          }));
-          resolve();
-        }
-      );
-    });
+    try {
+      if ((communityAPI as any).getPostById) {
+        const detailed: ServerPost = await (communityAPI as any).getPostById(
+          post.id
+        );
+        const mapped: Post = {
+          id: detailed.id,
+          mediaUri: getFileUrl(detailed.fileFullpath),
+          mediaType: detailed.fileType?.toLowerCase().includes("video")
+            ? "video"
+            : "image",
+          user: detailed.creatorName || post.user,
+          time: detailed.timeAgo || post.time,
+          content: detailed.content,
+          fileType: detailed.fileType,
+          serverPost: detailed,
+          reactionsSummary: detailed.reactionsSummary,
+          userReaction: detailed.userReaction,
+        };
+        setSelectedPost(mapped);
+      } else {
+        setSelectedPost(post);
+      }
+
+      // --- SCROLL FIX 2: Call the scrollTo method here ---
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false }); // Use animated: true for a smooth scroll
+    } catch (err) {
+      console.warn("Failed to fetch post by id, falling back to local:", err);
+      setSelectedPost(post);
+      // --- Also scroll to top on fallback ---
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+    }
   };
 
-  // Load image dimensions for posts
-  useEffect(() => {
-    if (posts.length > 0) {
-      posts.forEach(async (post) => {
-        const fullUrl = `${BASE_FILE_URL}${post.fileFullpath}`;
-
-        if (post.mediaType === "image") {
-          await calculateImageHeight(fullUrl, post.id);
-        } else {
-          // For videos, set a default aspect ratio
-          const width = 180;
-          const height = width * (9 / 16); // Default to 9:16 aspect ratio
-
-          setImageHeights((prev) => ({
-            ...prev,
-            [post.id]: height,
-          }));
-
-          setVideoDimensions((prev) => ({
-            ...prev,
-            [post.id]: { width: 16, height: 9 },
-          }));
-        }
-      });
-    }
-  }, [posts]);
-
-  // Cleanup timeout when component unmounts or selected image changes
   useEffect(() => {
     return () => {
       if (videoControlsTimeoutRef.current) {
         clearTimeout(videoControlsTimeoutRef.current);
       }
     };
-  }, [selectedImage]);
+  }, [selectedPost]);
 
-  // Ensure video starts playing when selected
   useEffect(() => {
     if (
-      selectedImage &&
-      selectedImage.mediaType === "video" &&
+      selectedPost &&
+      selectedPost.mediaType === "video" &&
       videoRef.current
     ) {
       const playVideo = async () => {
         try {
           await videoRef.current?.playAsync();
-          console.log("Video started playing");
         } catch (error) {
           console.log("Error starting video:", error);
         }
       };
-      // Small delay to ensure video is loaded
-      const timeout = setTimeout(playVideo, 100);
-      return () => clearTimeout(timeout);
+      setTimeout(playVideo, 100);
     }
-  }, [selectedImage]);
+  }, [selectedPost]);
 
-  // Fetch posts from API
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const apiPosts = await communityAPI.getAllPosts();
-
-        // Format posts and determine media type from filename
-        const formattedPosts: Post[] = apiPosts.map((post: any) => ({
-          id: post.id,
-          fileFullpath: post.fileFullpath,
-          fileName: post.fileName,
-          mediaType: post.fileName?.toLowerCase().endsWith(".mp4")
-            ? "video"
-            : "image",
-          creatorName: post.creatorName || "Unknown",
-          createdAt: post.createdAt || "Unknown time",
-          likeCount: post.likeCount || 0,
-          isLiked: false, // Assume not liked initially
-        }));
-
-        setPosts(formattedPosts);
-      } catch (err) {
-        console.error("Failed to fetch posts:", err);
-        setError("Could not load the feed. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPosts();
-  }, []);
-
-  // Format time display
-  const formatTime = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffInMinutes = Math.floor(
-        (now.getTime() - date.getTime()) / (1000 * 60)
-      );
-
-      if (diffInMinutes < 1) return "Just now";
-      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
-      return `${Math.floor(diffInMinutes / 1440)}d ago`;
-    } catch {
-      return dateString;
-    }
-  };
-  const handleLikeToggle = async (postToUpdate: Post, reaction: string) => {
-    const originalPosts = [...posts];
-    const isCurrentlyLiked = postToUpdate.isLiked;
-
-    // Optimistic UI Update
-    const updatedPosts = posts.map((p) => {
-      if (p.id === postToUpdate.id) {
-        return {
-          ...p,
-          isLiked: !isCurrentlyLiked,
-          likeCount: isCurrentlyLiked ? p.likeCount - 1 : p.likeCount + 1,
-        };
-      }
-      return p;
-    });
-    setPosts(updatedPosts);
-
-    // Also update the reaction emoji state
-    setPostReaction((prev) => {
-      const newReactions = { ...prev };
-      if (!isCurrentlyLiked) {
-        newReactions[postToUpdate.id] = reaction; // Set reaction on like
-      } else {
-        delete newReactions[postToUpdate.id]; // Remove reaction on unlike
-      }
-      return newReactions;
-    });
-
-    // API Call
-    try {
-      if (isCurrentlyLiked) {
-        await communityAPI.unlikePost(postToUpdate.id);
-      } else {
-        await communityAPI.likePost(postToUpdate.id);
-      }
-    } catch (error) {
-      console.error("Failed to update like status:", error);
-      // If API call fails, revert the state
-      setPosts(originalPosts);
-      alert("Could not update your reaction. Please try again.");
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <ActivityIndicator size="large" color="#FFF" />
-        <Text className="text-white mt-4">Loading posts...</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View className="flex-1 bg-black justify-center items-center px-4">
-        <Text className="text-white text-lg text-center mb-4">{error}</Text>
-        <TouchableOpacity
-          onPress={() => {
-            setError(null);
-            setIsLoading(true);
-            // Trigger re-fetch
-            const fetchPosts = async () => {
-              try {
-                const apiPosts = await communityAPI.getAllPosts();
-                const formattedPosts: Post[] = apiPosts.map((post: any) => ({
-                  id: post.id,
-                  fileFullpath: post.fileFullpath,
-                  fileName: post.fileName,
-                  mediaType: post.fileName?.toLowerCase().endsWith(".mp4")
-                    ? "video"
-                    : "image",
-                  creatorName: post.creatorName || "Unknown",
-                  createdAt: post.createdAt || "Unknown time",
-                  likeCount: post.likeCount || 0,
-                }));
-                setPosts(formattedPosts);
-              } catch (err) {
-                setError("Could not load the feed. Please try again.");
-              } finally {
-                setIsLoading(false);
-              }
-            };
-            fetchPosts();
-          }}
-          className="bg-blue-600 px-6 py-3 rounded-lg"
-        >
-          <Text className="text-white font-semibold">Retry</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
-
-  if (posts.length === 0) {
-    return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <Text className="text-white text-lg">No posts available</Text>
-      </View>
-    );
-  }
-
-  const leftColumn: Post[] = [];
-  const rightColumn: Post[] = [];
-
-  // Distribute posts into left and right columns for balance
-  posts.forEach((post, index) => {
-    (index % 2 === 0 ? leftColumn : rightColumn).push(post);
+  const columnLeft: Post[] = [];
+  const columnRight: Post[] = [];
+  posts.forEach((p, i) => {
+    (i % 2 === 0 ? columnLeft : columnRight).push(p);
   });
 
-  const renderPost = (post: Post) => {
-    const fullUrl = `${BASE_FILE_URL}${post.fileFullpath}`;
-
-    return (
-      <View key={post.id} className="mb-4">
-        <TouchableOpacity
-          onPress={() => {
-            setSelectedImage(post);
-            setShowVideoControls(false);
-          }}
-          activeOpacity={0.9}
-        >
-          <View className="relative">
-            {post.mediaType === "image" ? (
-              <Image
-                source={{ uri: fullUrl }}
-                style={{
-                  width: "100%",
-                  height: imageHeights[post.id] || 200,
-                  borderRadius: 16,
-                }}
-                resizeMode="cover"
-                onError={(error) => {
-                  console.log("Image loading error:", error);
-                }}
-              />
-            ) : (
-              <View
-                style={{
-                  width: "100%",
-                  aspectRatio: videoDimensions[post.id]
-                    ? videoDimensions[post.id].width /
-                      videoDimensions[post.id].height
-                    : 16 / 9,
-                  borderRadius: 16,
-                  backgroundColor: "#000",
-                  overflow: "hidden",
-                }}
-              >
-                <Video
-                  source={{ uri: fullUrl }}
-                  style={{
-                    width: "100%",
-                    height: "100%",
-                  }}
-                  resizeMode={ResizeMode.COVER}
-                  isMuted={true}
-                  shouldPlay={true}
-                  isLooping={true}
-                  volume={0}
-                  onReadyForDisplay={(event) => {
-                    const { width, height } = event.naturalSize;
-                    setVideoDimensions((prev) => ({
-                      ...prev,
-                      [post.id]: { width, height },
-                    }));
-                  }}
-                  onError={(error) => {
-                    console.log("Video loading error:", error);
-                  }}
-                />
-              </View>
-            )}
-
-            {/* Emoji Overlay on each post */}
-            {/* Generic Like Overlay on each post */}
-            {post.likeCount > 0 && (
-              <View
-                className="absolute bottom-2 right-2 flex-row bg-white rounded-full justify-center items-center"
-                style={{
-                  width: 20,
-                  height: 20,
-                  borderWidth: 1,
-                  borderColor: "white",
-                }}
-              >
-                <Text style={{ fontSize: 11 }}>❤️</Text>
-              </View>
-            )}
-          </View>
-        </TouchableOpacity>
-
-        <View className="flex-row items-center mt-2">
-          <Image
-            source={require("../../assets/images/profile.png")}
-            className="w-8 h-8 rounded-full"
-          />
-          <View className="ml-2">
-            <Text className="text-white text-sm">{post.creatorName}</Text>
-            <Text className="text-white/50 text-xs">
-              {formatTime(post.createdAt)}
-            </Text>
-          </View>
-        </View>
-      </View>
-    );
+  const reactionEmojiMap = {
+    heart: "❤️",
+    like: "👍",
+    fire: "🔥",
   };
 
-  if (selectedImage) {
-    const fullSelectedUrl = `${BASE_FILE_URL}${selectedImage.fileFullpath}`;
-    const currentPost =
-      posts.find((p) => p.id === selectedImage.id) || selectedImage;
+  const renderPost = (post: Post) => (
+    <View key={post.id} className="mb-4">
+      <TouchableOpacity
+        onPress={() => handleSelectPost(post)}
+        activeOpacity={0.9}
+      >
+        <View className="relative">
+          {post.mediaType === "image" ? (
+            <Image
+              source={{ uri: post.mediaUri }}
+              style={{
+                width: "100%",
+                height: imageHeights[post.id] || 200,
+                borderRadius: 16,
+              }}
+              resizeMode="cover"
+            />
+          ) : (
+            <View
+              style={{
+                width: "100%",
+                aspectRatio: videoDimensions?.[post.id]
+                  ? videoDimensions[post.id].width /
+                    videoDimensions[post.id].height
+                  : 16 / 9,
+                borderRadius: 16,
+                backgroundColor: "#000",
+                overflow: "hidden",
+              }}
+            >
+              <Video
+                source={{ uri: post.mediaUri }}
+                style={{ width: "100%", height: "100%" }}
+                resizeMode={ResizeMode.COVER}
+                isMuted={true}
+                shouldPlay={true}
+                isLooping={true}
+                volume={0}
+                onReadyForDisplay={(event) => {
+                  const { width, height } = event.naturalSize;
+                  setVideoDimensions((prev) => ({
+                    ...prev,
+                    [post.id]: { width, height },
+                  }));
+                }}
+              />
+            </View>
+          )}
 
+          <ReactionDisplay reactionsSummary={post.reactionsSummary} />
+        </View>
+      </TouchableOpacity>
+
+      <View className="flex-row items-center mt-2">
+        <Image
+          source={require("../../assets/images/profile.png")}
+          className="w-8 h-8 rounded-full"
+        />
+        <View className="ml-2">
+          <Text className="text-white text-sm">{post.user}</Text>
+          <Text className="text-white/50 text-xs">{post.time}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  if (selectedPost) {
     return (
       <View className="flex-1 bg-black pt-10">
         <ScrollView
+          // --- SCROLL FIX 3: Attach the ref to the ScrollView ---
+          ref={scrollViewRef}
           className="flex-1"
           showsVerticalScrollIndicator={false}
-          ref={(ref) => {
-            if (ref) {
-              ref.scrollTo({ y: 0, animated: false });
-            }
-          }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={() => {
+                setRefreshing(true);
+                fetchPosts();
+              }}
+            />
+          }
         >
-          {/* Header */}
           <View className="flex-row items-center justify-between px-4 pb-4">
             <TouchableOpacity
               onPress={() => {
-                // Stop video when going back
-                if (videoRef.current && selectedImage.mediaType === "video") {
+                if (videoRef.current && selectedPost?.mediaType === "video") {
                   videoRef.current.pauseAsync();
                 }
-                setSelectedImage(null);
+                setSelectedPost(null);
                 setShowVideoControls(false);
               }}
               className="p-2"
@@ -466,18 +441,17 @@ const Social = () => {
               <ArrowLeftCircle size={24} strokeWidth={1} color="white" />
             </TouchableOpacity>
             <Text className="text-white text-lg font-semibold">
-              {selectedImage.creatorName}'s Post
+              {selectedPost.user}'s Post
             </Text>
             <View style={{ width: 40 }} />
           </View>
 
-          {/* Main Media */}
           <View className="px-2">
             <TouchableOpacity activeOpacity={0.9} onPress={openFullScreen}>
               <View className="relative">
-                {selectedImage.mediaType === "image" ? (
+                {selectedPost.mediaType === "image" ? (
                   <Image
-                    source={{ uri: fullSelectedUrl }}
+                    source={{ uri: selectedPost.mediaUri }}
                     style={{
                       width: screenWidth - 16,
                       height: undefined,
@@ -485,17 +459,14 @@ const Social = () => {
                       borderRadius: 24,
                     }}
                     resizeMode="contain"
-                    onError={(error) => {
-                      console.log("Selected image loading error:", error);
-                    }}
                   />
                 ) : (
                   <View
                     style={{
                       width: screenWidth - 16,
-                      aspectRatio: videoDimensions[selectedImage.id]
-                        ? videoDimensions[selectedImage.id].width /
-                          videoDimensions[selectedImage.id].height
+                      aspectRatio: videoDimensions[selectedPost.id]
+                        ? videoDimensions[selectedPost.id].width /
+                          videoDimensions[selectedPost.id].height
                         : 16 / 9,
                       borderRadius: 24,
                       overflow: "hidden",
@@ -504,11 +475,8 @@ const Social = () => {
                   >
                     <Video
                       ref={videoRef}
-                      source={{ uri: fullSelectedUrl }}
-                      style={{
-                        width: "100%",
-                        height: "100%",
-                      }}
+                      source={{ uri: selectedPost.mediaUri }}
+                      style={{ width: "100%", height: "100%" }}
                       resizeMode={ResizeMode.COVER}
                       isMuted={true}
                       shouldPlay={true}
@@ -516,7 +484,6 @@ const Social = () => {
                       volume={0}
                       useNativeControls={showVideoControls}
                       onLoad={async () => {
-                        console.log("Video loaded successfully");
                         try {
                           if (videoRef.current) {
                             await videoRef.current.playAsync();
@@ -529,17 +496,11 @@ const Social = () => {
                         const { width, height } = event.naturalSize;
                         setVideoDimensions((prev) => ({
                           ...prev,
-                          [selectedImage.id]: { width, height },
+                          [selectedPost.id]: { width, height },
                         }));
                       }}
                       onError={(error) => {
                         console.log("Video loading error:", error);
-                      }}
-                      onLoadStart={() => {
-                        console.log(
-                          "Video loading started for",
-                          selectedImage.id
-                        );
                       }}
                     />
                     {!showVideoControls && (
@@ -574,27 +535,13 @@ const Social = () => {
                     )}
                   </View>
                 )}
-
-                {/* Emoji Overlay */}
-                {/* Generic Like Overlay */}
-                {currentPost.likeCount > 0 && (
-                  <View
-                    className="absolute bottom-4 right-4 flex-row bg-white rounded-full justify-center items-center"
-                    style={{
-                      width: 20,
-                      height: 20,
-                      borderWidth: 1,
-                      borderColor: "white",
-                    }}
-                  >
-                    <Text style={{ fontSize: 11 }}>❤️</Text>
-                  </View>
-                )}
+                <ReactionDisplay
+                  reactionsSummary={selectedPost.reactionsSummary}
+                />
               </View>
             </TouchableOpacity>
           </View>
 
-          {/* Full Screen Modal */}
           <Modal
             visible={showFullScreen}
             transparent={true}
@@ -603,9 +550,7 @@ const Social = () => {
           >
             <Animated.View
               className="flex-1 bg-black"
-              style={{
-                opacity: animatedOpacity,
-              }}
+              style={{ opacity: animatedOpacity }}
             >
               <TouchableOpacity
                 className="absolute top-16 right-4 z-10 p-4"
@@ -627,64 +572,54 @@ const Social = () => {
                 }}
                 className="justify-center items-center"
               >
-                {selectedImage.mediaType === "image" ? (
+                {selectedPost.mediaType === "image" ? (
                   <Image
-                    source={{ uri: fullSelectedUrl }}
-                    style={{
-                      width: screenWidth,
-                      height: screenHeight,
-                    }}
+                    source={{ uri: selectedPost.mediaUri }}
+                    style={{ width: screenWidth, height: screenHeight }}
                     resizeMode="contain"
                   />
                 ) : (
                   <Video
-                    source={{ uri: fullSelectedUrl }}
-                    style={{
-                      width: screenWidth,
-                      height: screenHeight,
-                    }}
+                    source={{ uri: selectedPost.mediaUri }}
+                    style={{ width: screenWidth, height: screenHeight }}
                     resizeMode={ResizeMode.CONTAIN}
                     useNativeControls
-                    shouldPlay={true}
-                    onError={(error) => {
-                      console.log("Full screen video error:", error);
-                    }}
-                    onLoadStart={() => {
-                      console.log("Full screen video loading started");
-                    }}
+                    shouldPlay
+                    onError={(e) => console.log("Full screen video error:", e)}
                   />
                 )}
               </Animated.View>
             </Animated.View>
           </Modal>
 
-          {/* User Info */}
-          <View className="flex-row items-center px-4 py-4">
+          <View className="flex-row items-start px-4 py-4">
             <Image
               source={require("../../assets/images/profile.png")}
               className="w-12 h-12 rounded-full"
             />
-            <View className="ml-3 relative">
-              <Text className="text-white text-base font-semibold">
-                {selectedImage.creatorName}
-              </Text>
-              <Text className="text-white/50 text-sm">
-                {formatTime(selectedImage.createdAt)}
-              </Text>
+            <View className="ml-3 flex-1">
+              <View className="flex-row justify-between gap-2">
+                <Text className="text-white text-base font-semibold">
+                  {selectedPost.user}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    /* your action here */
+                  }}
+                >
+                  <ExternalLink size={16} color="white" />
+                </TouchableOpacity>
+              </View>
+              <Text className="text-white/50 text-sm">{selectedPost.time}</Text>
+              <Text className="text-white text-sm">{selectedPost.content}</Text>
 
               <TouchableOpacity
-                onPress={() => {
-                  if (currentPost.isLiked) {
-                    handleLikeToggle(currentPost, "");
-                  } else {
-                    setShowEmojiPopup(!showEmojiPopup);
-                  }
-                }}
-                className="mt-1"
+                onPress={() => setShowEmojiPopup(!showEmojiPopup)}
+                className="mt-1 p-1"
               >
-                {currentPost.isLiked && postReaction[currentPost.id] ? (
-                  <Text style={{ fontSize: 24 }}>
-                    {postReaction[currentPost.id]}
+                {selectedPost.userReaction ? (
+                  <Text className="text-xl">
+                    {reactionEmojiMap[selectedPost.userReaction]}
                   </Text>
                 ) : (
                   <Heart color="white" size={18} />
@@ -692,27 +627,39 @@ const Social = () => {
               </TouchableOpacity>
 
               {showEmojiPopup && (
-                <View className="absolute bottom-full mb-2 flex-row bg-white rounded-full py-1 px-0 shadow-lg">
-                  {["❤️", "👍", "🔥"].map((emoji) => (
-                    <TouchableOpacity
-                      key={emoji}
+                <View className="absolute bottom-full mb-2 flex-row bg-white rounded-full py-1 px-1 shadow-lg">
+                  <TouchableOpacity
                     onPress={() => {
-  if (currentPost) {
-    handleLikeToggle(currentPost, emoji);
-  }
-  setShowEmojiPopup(false);
-}}
-                      className="mx-2"
-                    >
-                      <Text className="text-2xl">{emoji}</Text>
-                    </TouchableOpacity>
-                  ))}
+                      handleReact(selectedPost.id, "heart");
+                      setShowEmojiPopup(false);
+                    }}
+                    className="mx-2"
+                  >
+                    <Text className="text-2xl">❤️</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleReact(selectedPost.id, "like");
+                      setShowEmojiPopup(false);
+                    }}
+                    className="mx-2"
+                  >
+                    <Text className="text-2xl">👍</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      handleReact(selectedPost.id, "fire");
+                      setShowEmojiPopup(false);
+                    }}
+                    className="mx-2"
+                  >
+                    <Text className="text-2xl">🔥</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>
           </View>
 
-          {/* More to explore */}
           <View className="px-2 mt-4">
             <Text className="text-white text-base font-semibold px-2 mb-3">
               More to explore
@@ -721,16 +668,150 @@ const Social = () => {
               <View className="w-[49%]">
                 {posts
                   .filter(
-                    (post) => post.id % 2 === 0 && post.id !== selectedImage.id
+                    (post) => post.id % 2 === 0 && post.id !== selectedPost.id
                   )
-                  .map((post) => renderPost(post))}
+                  .map((post) => (
+                    <TouchableOpacity
+                      key={post.id}
+                      onPress={() => handleSelectPost(post)}
+                      className="mb-4"
+                    >
+                      <View className="relative">
+                        {post.mediaType === "image" ? (
+                          <Image
+                            source={{ uri: post.mediaUri }}
+                            style={{
+                              width: "100%",
+                              height: imageHeights[post.id] || 200,
+                              borderRadius: 16,
+                            }}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View
+                            style={{
+                              width: "100%",
+                              aspectRatio: videoDimensions?.[post.id]
+                                ? videoDimensions[post.id].width /
+                                  videoDimensions[post.id].height
+                                : 16 / 9,
+                              borderRadius: 16,
+                              backgroundColor: "#000",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <Video
+                              source={{ uri: post.mediaUri }}
+                              style={{ width: "100%", height: "100%" }}
+                              resizeMode={ResizeMode.COVER}
+                              isMuted
+                              shouldPlay
+                              isLooping
+                              volume={0}
+                              onReadyForDisplay={(event) => {
+                                const { width, height } = event.naturalSize;
+                                setVideoDimensions((prev) => ({
+                                  ...prev,
+                                  [post.id]: { width, height },
+                                }));
+                              }}
+                            />
+                          </View>
+                        )}
+                        <ReactionDisplay
+                          reactionsSummary={post.reactionsSummary}
+                        />
+                      </View>
+                      <View className="flex-row items-center mt-2">
+                        <Image
+                          source={require("../../assets/images/profile.png")}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <View className="ml-2">
+                          <Text className="text-white text-sm">
+                            {post.user}
+                          </Text>
+                          <Text className="text-white/50 text-xs">
+                            {post.time}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
               </View>
               <View className="w-[49%]">
                 {posts
                   .filter(
-                    (post) => post.id % 2 !== 0 && post.id !== selectedImage.id
+                    (post) => post.id % 2 !== 0 && post.id !== selectedPost.id
                   )
-             .map((post) => renderPost(post))}
+                  .map((post) => (
+                    <TouchableOpacity
+                      key={post.id}
+                      onPress={() => handleSelectPost(post)}
+                      className="mb-4"
+                    >
+                      <View className="relative">
+                        {post.mediaType === "image" ? (
+                          <Image
+                            source={{ uri: post.mediaUri }}
+                            style={{
+                              width: "100%",
+                              height: imageHeights[post.id] || 200,
+                              borderRadius: 16,
+                            }}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View
+                            style={{
+                              width: "100%",
+                              aspectRatio: videoDimensions?.[post.id]
+                                ? videoDimensions[post.id].width /
+                                  videoDimensions[post.id].height
+                                : 16 / 9,
+                              borderRadius: 16,
+                              backgroundColor: "#000",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <Video
+                              source={{ uri: post.mediaUri }}
+                              style={{ width: "100%", height: "100%" }}
+                              resizeMode={ResizeMode.COVER}
+                              isMuted
+                              shouldPlay
+                              isLooping
+                              volume={0}
+                              onReadyForDisplay={(event) => {
+                                const { width, height } = event.naturalSize;
+                                setVideoDimensions((prev) => ({
+                                  ...prev,
+                                  [post.id]: { width, height },
+                                }));
+                              }}
+                            />
+                          </View>
+                        )}
+                        <ReactionDisplay
+                          reactionsSummary={post.reactionsSummary}
+                        />
+                      </View>
+                      <View className="flex-row items-center mt-2">
+                        <Image
+                          source={require("../../assets/images/profile.png")}
+                          className="w-8 h-8 rounded-full"
+                        />
+                        <View className="ml-2">
+                          <Text className="text-white text-sm">
+                            {post.user}
+                          </Text>
+                          <Text className="text-white/50 text-xs">
+                            {post.time}
+                          </Text>
+                        </View>
+                      </View>
+                    </TouchableOpacity>
+                  ))}
               </View>
             </View>
           </View>
@@ -741,7 +822,6 @@ const Social = () => {
 
   return (
     <View className="flex-1 bg-secbg">
-      {/* Fixed Header */}
       <SafeAreaView
         className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
         style={{
@@ -757,16 +837,39 @@ const Social = () => {
         </View>
       </SafeAreaView>
 
-      {/* Scrollable Content */}
+      {loading && (
+        <View
+          style={{
+            position: "absolute",
+            top: 140,
+            left: 0,
+            right: 0,
+            alignItems: "center",
+            zIndex: 50,
+          }}
+        >
+          <ActivityIndicator size="large" />
+        </View>
+      )}
+
       <ScrollView
         className="flex-1 bg-black px-3"
         style={{ marginTop: 120, paddingTop: 8 }}
         contentContainerStyle={{ paddingBottom: 20 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => {
+              setRefreshing(true);
+              fetchPosts();
+            }}
+          />
+        }
       >
         <View className="flex-row justify-between">
-          <View className="w-[49%]">{leftColumn.map(renderPost)}</View>
-          <View className="w-[49%]">{rightColumn.map(renderPost)}</View>
+          <View className="w-[49%]">{columnLeft.map(renderPost)}</View>
+          <View className="w-[49%]">{columnRight.map(renderPost)}</View>
         </View>
       </ScrollView>
     </View>

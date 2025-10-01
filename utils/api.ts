@@ -6,7 +6,7 @@ import { Platform } from "react-native";
 const BASE_URL = "http://34.59.166.225:8001";
 const ATT_BASE_URL = "http://34.59.166.225:8002";
 const COMMUNITY_BASE_URL = "http://34.59.166.225:8003";
-const CHALLENGES_BASE_URL = "http://34.59.166.225:8004"
+const CHALLENGES_BASE_URL = "http://34.59.166.225:8004";
 export const BASE_FILE_URL = "http://34.59.166.225/uploads/";
 
 // Create axios instance with default config
@@ -364,20 +364,34 @@ export const communityAPI = {
       throw error;
     }
   },
-      likePost: async (postId: number) => {
-      try {
-        const response = await commapi.post(
-          `/api/v1/Community/posts/${postId}/like`
-        );
-        return response.data;
-      } catch (error) {
-        throw error;
-      }
-    },
-    unlikePost: async (postId: number) => {
+  getPostById: async (postId: number | string) => {
+    try {
+      const response = await commapi.get(`/api/v1/Community/posts/${postId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  addOrUpdateReaction: async (postId: number, reactionType: number) => {
+    try {
+      const response = await commapi.post(
+        `/api/v1/Community/posts/${postId}/react`,
+        { reactionType } // This sends the body { "reactionType": 2 }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  /**
+   * Removes the current user's reaction from a post.
+   * @param postId The ID of the post to un-react from.
+   */
+  removeReaction: async (postId: number) => {
     try {
       const response = await commapi.delete(
-        `/api/v1/Community/posts/${postId}/like`
+        `/api/v1/Community/posts/${postId}/react`
       );
       return response.data;
     } catch (error) {
@@ -388,22 +402,22 @@ export const communityAPI = {
 
 export const challengesAPI = {
   getUpcomingChallenges: async () => {
-    try { 
+    try {
       const response = await challengeapi.get("/api/v1/challenges/upcoming");
       return response.data;
     } catch (error) {
       throw error;
-    }             
+    }
   },
-    getActiveChallenges: async () => {
-    try { 
+  getActiveChallenges: async () => {
+    try {
       const response = await challengeapi.get("/api/v1/challenges/active");
       return response.data;
     } catch (error) {
       throw error;
-    }             
+    }
   },
-joinChallenge: async (challengeId: string | number) => {
+  joinChallenge: async (challengeId: string | number) => {
     try {
       // It makes a POST request to the specific endpoint
       const response = await challengeapi.post(
@@ -435,8 +449,6 @@ joinChallenge: async (challengeId: string | number) => {
       throw error;
     }
   },
-
-  
-}
+};
 
 export default api;
