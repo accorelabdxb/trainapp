@@ -6,6 +6,7 @@ import { Platform } from "react-native";
 const BASE_URL = "http://34.59.166.225:8001";
 const ATT_BASE_URL = "http://34.59.166.225:8002";
 const COMMUNITY_BASE_URL = "http://34.59.166.225:8003";
+const CHALLENGES_BASE_URL = "http://34.59.166.225:8004"
 export const BASE_FILE_URL = "http://34.59.166.225/uploads/";
 
 // Create axios instance with default config
@@ -25,6 +26,10 @@ const attapi = axios.create({
 
 const commapi = axios.create({
   baseURL: COMMUNITY_BASE_URL,
+});
+
+const challengeapi = axios.create({
+  baseURL: CHALLENGES_BASE_URL,
 });
 
 // Request interceptor to add token to headers (for AUTH API)
@@ -124,6 +129,37 @@ commapi.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+challengeapi.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await secureStorage.getAccessToken();
+      if (token) {
+        // Validate token before using it
+        if (!tokenManager.isValidToken(token)) {
+          console.warn("Invalid token format detected");
+        }
+
+        // Check if token is expired
+        if (tokenManager.isTokenExpired(token)) {
+          console.warn("Token is expired, clearing storage");
+          await secureStorage.clearAll();
+          throw new TokenExpiredError();
+        }
+
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error("Error adding token to attendance request:", error);
+      if (error instanceof TokenExpiredError) {
+        throw error;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor to handle token expiration (for AUTH API)
 api.interceptors.response.use(
@@ -176,6 +212,29 @@ attapi.interceptors.response.use(
 );
 
 commapi.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If error is 401 (Unauthorized) and we haven't already tried to handle it
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Handle token expiration
+        await tokenManager.handleTokenExpiration();
+      } catch (refreshError) {
+        // If handling fails, throw the original error
+        throw new TokenExpiredError();
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+challengeapi.interceptors.response.use(
   (response) => {
     return response;
   },
@@ -326,5 +385,58 @@ export const communityAPI = {
     }
   },
 };
+
+export const challengesAPI = {
+  getUpcomingChallenges: async () => {
+    try { 
+      const response = await challengeapi.get("/api/v1/challenges/upcoming");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }             
+  },
+    getActiveChallenges: async () => {
+    try { 
+      const response = await challengeapi.get("/api/v1/challenges/active");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }             
+  },
+joinChallenge: async (challengeId: string | number) => {
+    try {
+      // It makes a POST request to the specific endpoint
+      const response = await challengeapi.post(
+        `/api/v1/Challenges/${challengeId}/join`
+      );
+      return response.data;
+    } catch (error) {
+      // This allows your component to catch and handle the error
+      throw error;
+    }
+  },
+  getMyChallenges: async () => {
+    try {
+      const response = await challengeapi.get(
+        "/api/v1/Challenges/users/me/challenges"
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+  getChallengeDetails: async (challengeId: string | number) => {
+    try {
+      const response = await challengeapi.get(
+        `/api/v1/Challenges/${challengeId}`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  
+}
 
 export default api;

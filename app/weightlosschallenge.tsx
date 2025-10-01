@@ -1,7 +1,7 @@
 import OctagonAlertIcon from "@/lib/icons/OctaganAlert";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, ChevronLeft } from "lucide-react-native";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import RNModal from "react-native-modal";
 
 import {
@@ -13,8 +13,11 @@ import {
   Text,
   TouchableOpacity,
   View,
-  SafeAreaView
+  SafeAreaView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
+import { BASE_FILE_URL, challengesAPI } from "@/utils/api";
 
 const participants = [
   { name: "Nihas Latheef", image: require("../assets/images/profile.png") },
@@ -30,14 +33,132 @@ const participants = [
 ];
 
 const screenWidth = Dimensions.get("window").width;
+interface ChallengeDetail {
+  id: number;
+  title: string;
+  description: string;
+  startDate: string;
+  endDate: string;
+  attachmentUrl: string | null;
+  prizeDetails: string;
+  rules: string;
+  rewardPartnerLogo: string | null;
+  rewardPartner?: {
+    name: string;
+    address: string;
+    contact: string;
+    logo: string;
+  };
+  isJoined: boolean;
+    maxParticipants: number; 
+  currentParticipants: number
+}
 
 const WeightLossChallenge = () => {
+  const { id } = useLocalSearchParams();
+  console.log("id", id);
+  const [details, setDetails] = useState<ChallengeDetail | null>(null);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
 
   const handleGoBack = () => {
     router.push("/challenges");
   };
+
+
+const handleJoinChallenge = () => {
+
+  if (details?.isJoined) return;
+
+  
+  Alert.alert(
+    "Join Challenge",
+    "Are you sure you want to join this challenge?",
+    [
+      {
+        text: "Cancel",
+        style: "cancel",
+      },
+      {
+        text: "Join",
+      
+        onPress: async () => {
+          if (!id) return;
+          try {
+            setLoading(true); 
+            const response = await challengesAPI.joinChallenge(id as string);
+
+            if (response.success) {
+              // 1. Success alert is removed.
+              // 2. Navigate directly to the challenges list.
+              router.push("/challenges");
+            } else {
+              // Error handling remains the same.
+              Alert.alert("Error", response.message || "Failed to join.");
+            }
+          } catch (error) {
+            Alert.alert("Error", "An error occurred. Please try again.");
+          }finally {
+          setLoading(false);
+        }
+        },
+      },
+    ]
+  );
+};
+
+  useEffect(() => {
+    if (id) {
+      const fetchDetails = async () => {
+        try {
+          setLoading(true);
+          const data = await challengesAPI.getChallengeDetails(id as string);
+          setDetails(data);
+          console.log("object", data);
+        } catch (error) {
+          console.error("Failed to fetch details:", error);
+          Alert.alert("Error", "Could not load challenge details.");
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchDetails();
+    }
+  }, [id]);
+  
+
+  // Handle loading and error states
+  if (loading) {
+    return (
+      <View className="flex-1 bg-black justify-center items-center">
+        <ActivityIndicator size="large" color="#fff" />
+      </View>
+    );
+  }
+  if (!details) {
+    return (
+      <View className="flex-1 bg-black justify-center items-center">
+        <Text className="text-white">Could not find challenge details.</Text>
+      </View>
+    );
+  }
+  const startDate = new Date(details.startDate);
+  const day = String(startDate.getDate()).padStart(2, "0");
+  const month = startDate.toLocaleString("default", { month: "short" });
+  const formatDate = (date: Date) => {
+    const day = date.getDate();
+    // Use 'long' for the full month name (e.g., "May", "September")
+    const monthName = date.toLocaleString("default", { month: "long" });
+    const year = date.getFullYear();
+    return `${day} ${monthName} ${year}`;
+  };
+
+  // 2. Create the full date range string
+  const dateRange = `${formatDate(startDate)} to ${formatDate(
+    new Date(details.endDate)
+  )}`;
+  const spotsOpen = details.maxParticipants - details.currentParticipants;
 
   return (
     <View className="flex-1 bg-black">
@@ -54,7 +175,7 @@ const WeightLossChallenge = () => {
           className="text-white font-bold text-lg leading-6 capitalize text-center flex-1"
           numberOfLines={1}
         >
-          Weight Loss Challenge
+          {details.title}
         </Text>
 
         <View className="w-[44px]" />
@@ -63,28 +184,36 @@ const WeightLossChallenge = () => {
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
         <View className="relative">
           <Image
-            source={require("../assets/images/challenge2.png")}
+            source={
+              details.attachmentUrl
+                ? { uri: `${BASE_FILE_URL}${details.attachmentUrl}` }
+                : require("../assets/images/challenge2.png") // Fallback image
+            }
             className="w-full h-[400px]"
             resizeMode="cover"
           />
 
           <View className="absolute top-5 left-5 w-[60px] h-[60px] bg-white rounded-xl flex justify-center items-center">
             <Text className="font-bold text-base text-gray-900 leading-5">
-              01
+              {day}
             </Text>
-            <Text className="text-[14px] text-[#111]">May</Text>
+            <Text className="text-[14px] text-[#111]">{month}</Text>
           </View>
 
           <View className="absolute top-5 right-5 flex flex-row gap-2 items-center bg-white h-7 rounded-[14px] px-[14px] border border-gray-200">
             <OctagonAlertIcon size={16} color="#ff0000" />
             <Text className=" text-gray-600 font-semibold text-sm text-center capitalize">
-              3 Spots Open
+             {spotsOpen} Spot{spotsOpen !== 1 ? 's' : ''} Open
             </Text>
           </View>
 
           <View className="absolute right-5 bottom-5 w-[110px] h-[110px] bg-white rounded-[18px] flex justify-center items-center shadow-md">
             <Image
-              source={require("../assets/images/traininglogo.png")}
+              source={
+                details.attachmentUrl
+                  ? { uri: `${BASE_FILE_URL}${details.rewardPartnerLogo}` }
+                  : require("../assets/images/challenge2.png") // Fallback image
+              }
               className="w-[90px] h-[90px]"
               resizeMode="contain"
             />
@@ -112,19 +241,18 @@ const WeightLossChallenge = () => {
         {/* Text Section */}
         <View className="px-4">
           <Text className="text-white font-bold text-[22px] leading-7 capitalize pt-7">
-            Weight Loss Challenge
+            {details.title}
           </Text>
           <Text className="text-[#9f9f9f] font-medium text-base leading-6 mt-3">
-            Become The Most Consistent Version Of Yourself.{"\n"}
-            Build The Habit That Gets Results. Check-In For 30{"\n"}
-            Days This Month To Prove Your Dedication.
+            {details.description}
           </Text>
 
           {/* Date Row */}
           <View className="flex flex-row items-center mt-5">
             <Calendar color="#fff" size={22} className="mr-2.5" />
             <Text className="text-white font-semibold text-base leading-[22px] px-2.5 py-1 rounded-md">
-              01 May 2025 to 30 May 2025
+              {/* 3. Use the dynamic dateRange variable here */}
+              {dateRange}
             </Text>
           </View>
         </View>
@@ -143,8 +271,7 @@ const WeightLossChallenge = () => {
             The Prize:
           </Text>
           <Text className=" font-semibold text-base leading-6 text-[#9f9f9f] capitalize mb-1">
-            The First 10 Members To Complete The Challenge Will Receive A 2lb
-            Tub Of Whey Protein
+            {details.prizeDetails}
           </Text>
         </View>
 
@@ -152,29 +279,30 @@ const WeightLossChallenge = () => {
           <Text className="text-white  font-bold text-[22px] leading-7 capitalize pb-4 mt-10">
             Reward Partner
           </Text>
-          <View className="flex flex-row items-center pb-6">
-            <View className="w-[110px] h-[110px] bg-white rounded-[18px] flex justify-center items-center shadow-md">
-              <Image
-                source={require("../assets/images/traininglogo.png")}
-                className="w-[90px] h-[90px]"
-                resizeMode="contain"
-              />
+          {details.rewardPartner && (
+            <View className="flex flex-row items-center pb-6">
+              <View className="w-[110px] h-[110px] bg-white rounded-[18px] flex justify-center items-center shadow-md">
+                <Image
+                  source={{
+                    uri: `${BASE_FILE_URL}${details.rewardPartner.logo}`,
+                  }}
+                  className="w-[90px] h-[90px]"
+                  resizeMode="contain"
+                />
+              </View>
+              <View className="ml-6 mr-6 flex justify-center flex-1">
+                <Text className=" font-semibold text-xl text-white mb-1">
+                  {details.rewardPartner.name}
+                </Text>
+                <Text className=" font-medium text-base text-[#9f9f9f] leading-[22px]">
+                  {details.rewardPartner.address}
+                </Text>
+                <Text className=" font-semibold text-base text-[#9f9f9f] leading-[22px]">
+                  {details.rewardPartner.contact}
+                </Text>
+              </View>
             </View>
-            <View className="ml-6 flex justify-center flex-1">
-              <Text className=" font-semibold text-xl text-white mb-1">
-                Leefit Kettlebells
-              </Text>
-              <Text className=" font-medium text-base text-[#9f9f9f] leading-[22px]">
-                32, Alkhoori Building, 32 Street,
-              </Text>
-              <Text className=" font-medium text-base text-[#9f9f9f] leading-[22px]">
-                Al Karama, Dubai.
-              </Text>
-              <Text className=" font-semibold text-base text-[#9f9f9f] leading-[22px] mt-3">
-                +971 545 254 896
-              </Text>
-            </View>
-          </View>
+          )}
         </View>
 
         <View className="px-4">
@@ -187,32 +315,33 @@ const WeightLossChallenge = () => {
           </Text>
 
           <View>
-            {[
-              "Check into the gym 30 times between July 1st and July 30th.",
-              "Your attendance is automatically tracked when you scan your QR code at the front desk",
-              "The first 10 members to complete the challenge will receive a 2lb tub of whey protein",
-              "Maximum 10 members allowed",
-            ].map((rule, i) => (
-              <Text
-                key={i}
-                className={`text-[#9f9f9f]  font-medium text-base leading-[26px] ${
-                  i === 3 ? "" : "mb-3"
-                }`}
-              >
-                {i + 1}. {rule}
-              </Text>
-            ))}
+            {
+              // 1. Parse the rules string into an array of individual rules
+              // This regex finds all text enclosed in "quotes" and removes the quotes.
+              details.rules
+                .match(/"([^"]*)"/g)
+                ?.map((rule) => rule.replace(/"/g, ""))
+                .map((rule, i) => (
+                  // 2. Map over the dynamic rules to display them
+                  <Text
+                    key={i}
+                    className="text-[#9f9f9f] font-medium text-base leading-[26px] mb-3"
+                  >
+                    {i + 1}. {rule}
+                  </Text>
+                ))
+            }
           </View>
         </View>
       </ScrollView>
 
       <RNModal
         isVisible={modalVisible}
-          onBackdropPress={() => setModalVisible(false)}
+        onBackdropPress={() => setModalVisible(false)}
         style={{ justifyContent: "flex-end", margin: 0 }}
       >
         <View className="flex-1 flex justify-end bg-[rgba(0,0,0,0.55)]">
-         <View className="bg-white rounded-t-[30px] px-6 pt-6 pb-0">
+          <View className="bg-white rounded-t-[30px] px-6 pt-6 pb-0">
             <View className="flex flex-row justify-between items-center mb-6">
               <Text
                 className=" font-semibold text-xl capitalize text-black"
@@ -252,19 +381,36 @@ const WeightLossChallenge = () => {
           </View>
         </View>
       </RNModal>
-      <TouchableOpacity
-        activeOpacity={0.8}
-        className="absolute left-[14px] right-[14px] bottom-[28px] h-[57px] rounded-[51px] bg-white border border-white flex flex-row items-center justify-start shadow-lg px-5"
-        onPress={() => {}}
-      >
-        <Text className="font-medium text-[13px] text-[#494949] text-left capitalize">
-          3 Spots Open
-        </Text>
+   // In WeightLossChallenge.tsx, replace the bottom TouchableOpacity with this code
 
-        <Text className="absolute left-0 right-0 text-center font-medium text-lg text-black tracking-[0.22px]">
-          Join
-        </Text>
-      </TouchableOpacity>
+<TouchableOpacity
+  activeOpacity={0.8}
+  onPress={handleJoinChallenge}
+  disabled={details.isJoined || spotsOpen <= 0}
+  className={`absolute left-[14px] right-[14px] bottom-[28px] h-[57px] rounded-[51px] flex flex-row items-center shadow-lg px-5 ${
+    details.isJoined || spotsOpen <= 0
+      ? "bg-gray-600 border-gray-600 justify-center"
+      : "bg-white border-white justify-start"
+  }`}
+>
+ {!details.isJoined && spotsOpen > 0 && (
+    <Text className="font-medium text-[13px] text-[#494949] text-left capitalize">
+      {spotsOpen} Spot{spotsOpen !== 1 ? "s" : ""} Open
+    </Text>
+  )}
+
+  <Text
+    className={`absolute left-0 right-0 text-center font-medium text-lg tracking-[0.22px] ${
+      details.isJoined || spotsOpen <= 0 ? "text-white" : "text-black"
+    }`}
+  >
+    {details.isJoined
+      ? "Joined"
+      : spotsOpen > 0
+      ? "Join"
+      : "Full"}
+  </Text>
+</TouchableOpacity>
     </View>
   );
 };
