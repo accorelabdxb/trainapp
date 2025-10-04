@@ -1,9 +1,9 @@
 import { LogoutButton } from "@/components/common/LogoutButton";
 import { useProfile } from "@/context/hooks/useProfile";
-import { attendanceAPI } from "@/utils/api";
+import { attendanceAPI, BASE_FILE_URL, challengesAPI } from "@/utils/api";
 import { useRouter } from "expo-router";
 import moment from "moment";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatCard } from "../../components/common/StatCard";
@@ -12,12 +12,21 @@ import { UserGreeting } from "../../components/dashboard/UserGreeting";
 import { workoutStats } from "../../data/mockData";
 import { Bell } from "../../lib/icons/Bell";
 import { CircleChevronRight } from "../../lib/icons/CircleChevronRight";
+interface Challenge {
+  id: number;
+  title: string;
+  endDate: string;
+  attachmentUrl: string | null;
+  isUserParticipating: boolean;
+}
 
 const Dashboard = () => {
   const router = useRouter();
   const { user } = useProfile();
   console.log("user:", user);
   const [attendance, setAttendance] = React.useState<Record<string, boolean>>({});
+    const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [isLoadingChallenges, setIsLoadingChallenges] = useState(true);
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [coinsEarned, setCoinsEarned] = React.useState(0);
   const [isLoadingAttendance, setIsLoadingAttendance] = React.useState(true);
@@ -129,6 +138,38 @@ const handlePointsPress = () => {
     } finally {
       setIsCheckingIn(false);
     }
+  };
+    useEffect(() => {
+    const fetchChallenges = async () => {
+      try {
+        setIsLoadingChallenges(true);
+        // Use the function we created in Step 1
+        const data = await challengesAPI.getAllChallenges(); 
+        setChallenges(data);
+      } catch (error) {
+        console.error("Error fetching challenges on dashboard:", error);
+      } finally {
+        setIsLoadingChallenges(false);
+      }
+    };
+
+    fetchChallenges();
+  }, []);
+    const handleChallengePress = (challengeId: number) => {
+    router.push({
+      pathname: "/weightlosschallenge", // Your details screen
+      params: { id: challengeId },      // Pass the challenge ID
+    });
+  };
+   const formatEndDate = (endDateString: string) => {
+    const endDate = moment(endDateString);
+    const today = moment().startOf('day');
+    const diffDays = endDate.startOf('day').diff(today, 'days');
+
+    if (diffDays < 0) return "Ended";
+    if (diffDays === 0) return "Ends today";
+    if (diffDays === 1) return "Ends tomorrow";
+    return `Ends in ${diffDays} days`;
   };
 
   return (
@@ -308,85 +349,69 @@ const handlePointsPress = () => {
             </View>
           </View>
 
-          <View className="mt-8 px-4">
-            <Text className="text-white font-bold text-xl">Challenges</Text>
-            <View className="flex flex-row justify-between items-center">
-              <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingRight: 0,
-                  paddingVertical: 0,
-                }}
-              >
-                <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
-                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-black text-xs">Ends in 3 Days</Text>
-                  </View>
-                  <Image
-                    className="w-full h-40 rounded-t-2xl"
-                    source={require("../../assets/images/challenge1.png")}
-                  />
-                  <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                    Attendance Challenge
-                  </Text>
-                  <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                    <TouchableOpacity
-                      className="flex flex-row items-center"
-                      onPress={handleImageButtonPress}
-                      activeOpacity={0.7}
-                    >
-                      <Text className="text-black text-sm px-3">Join</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
-                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-black text-xs">Ends in 3 Days</Text>
-                  </View>
-                  <Image
-                    className="w-full h-40 rounded-t-2xl"
-                    source={require("../../assets/images/challenge2.png")}
-                  />
-                  <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                    Attendance Challenge
-                  </Text>
-                  <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                    <TouchableOpacity
-                      className="flex flex-row items-center"
-                      onPress={handleImageButtonPress}
-                      activeOpacity={0.7}
-                    >
-                      <Text className="text-black text-sm px-3">Join</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                <View className="bg-secbg rounded-2xl w-4/12 h-auto pb-6 mt-3 me-4 flex items-center relative">
-                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-black text-xs">Ends in 3 Days</Text>
-                  </View>
-                  <Image
-                    className="w-full h-40 rounded-t-2xl"
-                    source={require("../../assets/images/challenge1.png")}
-                  />
-                  <Text className="text-white mr-6 leading-5 py-4 px-4 mb-4">
-                    Attendance Challenge
-                  </Text>
-                  <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                    <TouchableOpacity
-                      className="flex flex-row items-center"
-                      onPress={handleImageButtonPress}
-                      activeOpacity={0.7}
-                    >
-                      <Text className="text-black text-sm px-3">Join</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </ScrollView>
+         <View className="mt-8 px-4">
+  <Text className="text-white font-bold text-xl">Challenges</Text>
+  
+  {/* Show a loading spinner while fetching data */}
+  {isLoadingChallenges ? (
+    <View className="flex items-center justify-center h-48">
+      <ActivityIndicator size="large" color="#ffffff" />
+    </View>
+  ) : (
+    <View className="flex flex-row justify-between items-center">
+      <ScrollView
+        horizontal={true}
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{
+          flexDirection: "row",
+          alignItems: "center",
+          paddingVertical: 0,
+        }}
+      >
+        {/* Map over the first 4 challenges from the state */}
+        {challenges.slice(0, 4).map((challenge) => (
+          <TouchableOpacity
+            key={challenge.id}
+            className="bg-secbg rounded-2xl w-52 pb-6 mt-3 me-4 flex items-center relative"
+            activeOpacity={0.8}
+            onPress={() => handleChallengePress(challenge.id)} // Use navigation handler
+          >
+            <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+              {/* Use date formatting function */}
+              <Text className="text-black text-xs">
+                {formatEndDate(challenge.endDate)}
+              </Text>
             </View>
-          </View>
+
+            <Image
+              className="w-full h-40 rounded-t-2xl"
+              // Use dynamic image with a fallback
+              source={
+                challenge.attachmentUrl
+                  ? { uri: `${BASE_FILE_URL}${challenge.attachmentUrl}` }
+                  : require("../../assets/images/challenge1.png") // Your fallback image
+              }
+            />
+            
+            {/* Use dynamic title */}
+            <Text className="text-white leading-5 py-4 px-4 mb-4 self-start font-semibold">
+              {challenge.title}
+            </Text>
+
+            <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
+              <View className="flex flex-row items-center">
+                {/* Use dynamic button text based on participation */}
+                <Text className="text-black text-sm px-3">
+                  {challenge.isUserParticipating ? "View" : "Join"}
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+    </View>
+  )}
+</View>
           
           <View className="mt-8 px-4">
             <Text className="text-white font-bold text-xl">

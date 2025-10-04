@@ -449,6 +449,15 @@ export const challengesAPI = {
       throw error;
     }
   },
+   getAllChallenges: async () => {
+    try {
+      // This endpoint gets all challenges as seen in your API response
+      const response = await challengeapi.get("/api/v1/Challenges");
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default api;
