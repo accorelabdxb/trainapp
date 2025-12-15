@@ -1,10 +1,17 @@
-import { BASE_FILE_URL, challengesAPI } from "@/utils/api";
-import { FontAwesome, FontAwesome5 } from "@expo/vector-icons";
+import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
+import {
+  useGetActiveChallengesQuery,
+  useGetMyChallengesQuery,
+  useGetUpcomingChallengesQuery,
+} from "@/store/slices/challengesApi";
+import { BASE_FILE_URL } from "@/utils/api";
+import { FontAwesome5 } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
   Animated,
+  Easing,
   Image,
   ScrollView,
   StyleSheet,
@@ -12,10 +19,9 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Easing } from "react-native-reanimated";
 import { SafeAreaView } from "react-native-safe-area-context";
 interface Challenge {
-   challengeId?: number; 
+  challengeId?: number;
   id: number;
   title: string;
   startDate: string;
@@ -28,7 +34,6 @@ interface Challenge {
 //   router.push("/thirtydaywarrior");
 // };
 
-
 const Challenges = () => {
   const handleCardPress = (challengeId: number) => {
     router.push({
@@ -39,14 +44,19 @@ const Challenges = () => {
   const handleMyChallengesPress = (challengeId: number) => {
     router.push({
       pathname: "/thirtydaywarrior", // Navigate to the correct page
-      params: { id: challengeId },    // Pass the challenge ID
+      params: { id: challengeId }, // Pass the challenge ID
     });
   };
 
-  const [upcomingChallenges, setUpcomingChallenges] = useState<Challenge[]>([]);
-  const [activeChallenges, setActiveChallenges] = useState<Challenge[]>([]);
-  const [myChallenges, setMyChallenges] = useState<Challenge[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // RTK Query hooks
+  const { data: upcomingChallenges = [], isLoading: isLoadingUpcoming } =
+    useGetUpcomingChallengesQuery();
+  const { data: activeChallenges = [], isLoading: isLoadingActive } =
+    useGetActiveChallengesQuery();
+  const { data: myChallenges = [], isLoading: isLoadingMy } =
+    useGetMyChallengesQuery();
+
+  const isLoading = isLoadingUpcoming || isLoadingActive || isLoadingMy;
 
   // Animation logic for the waving emoji, now correctly inside the component
   const waveAnimation = useRef(new Animated.Value(0)).current;
@@ -178,57 +188,6 @@ const Challenges = () => {
     outputRange: ["-15deg", "0deg", "15deg"],
   });
 
-  useEffect(() => {
-    // Define an async function inside the effect
-    const fetchChallenges = async () => {
-      try {
-        setIsLoading(true);
-        const data = await challengesAPI.getUpcomingChallenges();
-        setUpcomingChallenges(data); // Store the fetched data in state
-        // console.log("Fetched upcoming challenges:", data[0]);
-      } catch (error) {
-        console.error("Error fetching challenges:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchChallenges(); // Call the function
-  }, []);
-  useEffect(() => {
-    // Define an async function inside the effect
-    const fetchActiveChallenges = async () => {
-      try {
-        setIsLoading(true);
-        const data = await challengesAPI.getActiveChallenges();
-        setActiveChallenges(data); // Store the fetched data in state
-        // console.log("Fetched upcoming challenges:", data[0]);
-      } catch (error) {
-        console.error("Error fetching challenges:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchActiveChallenges(); // Call the function
-  }, []);
-  useEffect(() => {
-    // Define an async function inside the effect
-    const fetchMyChallenges = async () => {
-      try {
-        setIsLoading(true);
-        const data = await challengesAPI.getMyChallenges();
-        setMyChallenges(data); // Store the fetched data in state
-        // console.log("Fetched upcoming challenges:", data[0]);
-      } catch (error) {
-        console.error("Error fetching challenges:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchMyChallenges(); // Call the function
-  }, []);
   if (isLoading) {
     return (
       <View className="flex-1 bg-black justify-center items-center">
@@ -237,226 +196,232 @@ const Challenges = () => {
     );
   }
   return (
-    <View className="flex-1 bg-secbg">
-      {/* Fixed Header */}
-      <SafeAreaView
-        className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.84,
-          elevation: 5,
-        }}
-      >
-        <View className="px-6 bg-secbg flex flex-row items-center justify-between">
-          <Text className="text-white text-3xl font-bold ">Challenges</Text>
-        </View>
-      </SafeAreaView>
-
-      {/* Scrollable Content with top margin to account for fixed header */}
-      <ScrollView
-        className="flex-1 bg-black px-3"
-        style={{ marginTop: 120 }}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        showsVerticalScrollIndicator={false}
-      >
-      <View className="pt-4">
-  <Text className="text-white font-bold text-xl">My Challenges</Text>
-  <View className="flex flex-row justify-between items-center">
-    <ScrollView
-      horizontal={true}
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingVertical: 0,
-      }}
-    >
-      {myChallenges.map((challenge) => (
-        <TouchableOpacity
-          key={challenge.id}
-          
-          onPress={() => {
-              console.log("Clicked My Challenge ID:", challenge.id); // DEBUG LOG
-              handleMyChallengesPress(challenge.challengeId || challenge.id); // Use challengeId if available
-            }}
-          activeOpacity={0.9}
+    <ApiErrorBoundary>
+      <View className="flex-1 bg-secbg">
+        {/* Fixed Header */}
+        <SafeAreaView
+          className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+          }}
         >
-          <View
-            className="bg-secbg rounded-2xl w-52 h-auto pb-4 mt-3 me-4 relative"
-          >
-            <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-              <Text className="text-black text-xs">
-                {formatEndDate(challenge.endDate)}
-              </Text>
-            </View>
-            <Image
-              className="w-full h-40 rounded-t-2xl"
-              source={
-                challenge.attachmentUrl
-                  ? { uri: `${BASE_FILE_URL}${challenge.attachmentUrl}` }
-                  : require("../../assets/images/challenge1.png")
-              }
-            />
-            <View className="px-4">
-              <View className="mt-4">
-                <Text className="text-white font-bold">{challenge.title}</Text>
-              </View>
+          <View className="px-6 bg-secbg flex flex-row items-center justify-between">
+            <Text className="text-white text-3xl font-bold ">Challenges</Text>
+          </View>
+        </SafeAreaView>
 
-              {/* --- FINAL CODE - NO STAR --- */}
-              <View className="mt-2">
-                {/* Row 1: Medal and "Your Position" */}
-                <View className="flex-row items-center">
-                  {/* Icon container for alignment */}
-                  <View className="w-6 justify-center items-center">
-                    <FontAwesome5 name="medal" size={18} color="#D34848" />
-                  </View>
-                  <Text className="text-gray-400 text-xs ml-1">
-                    Your Position
-                  </Text>
-                </View>
+        {/* Scrollable Content with top margin to account for fixed header */}
+        <ScrollView
+          className="flex-1 bg-black px-3"
+          style={{ marginTop: 120 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="pt-4">
+            <Text className="text-white font-bold text-xl">My Challenges</Text>
+            <View className="flex flex-row justify-between items-center">
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingVertical: 0,
+                }}
+              >
+                {myChallenges.map((challenge) => (
+                  <TouchableOpacity
+                    key={challenge.id}
+                    onPress={() => {
+                      console.log("Clicked My Challenge ID:", challenge.id); // DEBUG LOG
+                      handleMyChallengesPress(
+                        challenge.challengeId || challenge.id
+                      ); // Use challengeId if available
+                    }}
+                    activeOpacity={0.9}
+                  >
+                    <View className="bg-secbg rounded-2xl w-52 h-auto pb-4 mt-3 me-4 relative">
+                      <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                        <Text className="text-black text-xs">
+                          {formatEndDate(challenge.endDate)}
+                        </Text>
+                      </View>
+                      <Image
+                        className="w-full h-40 rounded-t-2xl"
+                        source={
+                          challenge.attachmentUrl
+                            ? {
+                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                              }
+                            : require("../../assets/images/challenge1.png")
+                        }
+                      />
+                      <View className="px-4">
+                        <View className="mt-4">
+                          <Text className="text-white font-bold">
+                            {challenge.title}
+                          </Text>
+                        </View>
 
-                {/* Row 2: Position Number Only */}
-                <View className="flex-row items-center ">
-                  {/* Spacer view to align with the icon above */}
-                  <View className="w-6" />
-                  <Text className="text-white font-bold text-sm ml-1">
-                    2nd
-                  </Text>
-                </View>
-              </View>
-              {/* --- END OF FINAL CODE --- */}
+                        {/* --- FINAL CODE - NO STAR --- */}
+                        <View className="mt-2">
+                          {/* Row 1: Medal and "Your Position" */}
+                          <View className="flex-row items-center">
+                            {/* Icon container for alignment */}
+                            <View className="w-6 justify-center items-center">
+                              <FontAwesome5
+                                name="medal"
+                                size={18}
+                                color="#D34848"
+                              />
+                            </View>
+                            <Text className="text-gray-400 text-xs ml-1">
+                              Your Position
+                            </Text>
+                          </View>
 
+                          {/* Row 2: Position Number Only */}
+                          <View className="flex-row items-center ">
+                            {/* Spacer view to align with the icon above */}
+                            <View className="w-6" />
+                            <Text className="text-white font-bold text-sm ml-1">
+                              2nd
+                            </Text>
+                          </View>
+                        </View>
+                        {/* --- END OF FINAL CODE --- */}
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           </View>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
-  </View>
-</View>
-        <View className="mt-8">
-          <Text className="text-white font-bold text-xl">
-            Active Challenges
-          </Text>
-          <View className="flex flex-row justify-between items-center">
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingRight: 0,
-                paddingVertical: 0,
-              }}
-            >
-              {activeChallenges.map((challenge) => (
-                <TouchableOpacity
-                   key={challenge.id}
-                  onPress={() => handleCardPress(challenge.id)}
-                  activeOpacity={0.9}
-                >
-                  <View
-                 
-                    className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4 relative"
+          <View className="mt-8">
+            <Text className="text-white font-bold text-xl">
+              Active Challenges
+            </Text>
+            <View className="flex flex-row justify-between items-center">
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingRight: 0,
+                  paddingVertical: 0,
+                }}
+              >
+                {activeChallenges.map((challenge) => (
+                  <TouchableOpacity
+                    key={challenge.id}
+                    onPress={() => handleCardPress(challenge.id)}
+                    activeOpacity={0.9}
                   >
-                    <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                      <Text className="text-black text-xs">
-                        {formatEndDate(challenge.endDate)}
-                      </Text>
-                    </View>
-                    <Image
-                      className="w-full h-40 rounded-t-2xl"
-                      source={
-                        challenge.attachmentUrl
-                          ? {
-                              uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
-                            }
-                          : require("../../assets/images/challenge1.png")
-                      }
-                    />
-                    <View className="px-4">
-                      <View className="mt-4">
-                        <Text className="text-white">{challenge.title}</Text>
+                    <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4 relative">
+                      <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                        <Text className="text-black text-xs">
+                          {formatEndDate(challenge.endDate)}
+                        </Text>
                       </View>
-                      <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
-                        <View
-                          className="flex flex-row items-center"
-                          // onPress={() => handleJoinPress(challenge.id)}
-                          // activeOpacity={0.7}
-                        >
-                          <Text className="text-black text-sm px-3">Join</Text>
+                      <Image
+                        className="w-full h-40 rounded-t-2xl"
+                        source={
+                          challenge.attachmentUrl
+                            ? {
+                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                              }
+                            : require("../../assets/images/challenge1.png")
+                        }
+                      />
+                      <View className="px-4">
+                        <View className="mt-4">
+                          <Text className="text-white">{challenge.title}</Text>
+                        </View>
+                        <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                          <View
+                            className="flex flex-row items-center"
+                            // onPress={() => handleJoinPress(challenge.id)}
+                            // activeOpacity={0.7}
+                          >
+                            <Text className="text-black text-sm px-3">
+                              Join
+                            </Text>
+                          </View>
                         </View>
                       </View>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-        <View className="mt-8">
-          <Text className="text-white font-bold text-xl">
-            Upcoming Challenges
-          </Text>
-          <View className="flex flex-row justify-between items-center">
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingRight: 0,
-                paddingVertical: 0,
-              }}
-            >
-              {upcomingChallenges.map((challenge) => (
-                <TouchableOpacity
-                  key={challenge.id}
-                  onPress={() => handleCardPress(challenge.id)}
-                  activeOpacity={0.9}
-                >
-                  <View
-                  
-                    className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4 relative"
+          <View className="mt-8">
+            <Text className="text-white font-bold text-xl">
+              Upcoming Challenges
+            </Text>
+            <View className="flex flex-row justify-between items-center">
+              <ScrollView
+                horizontal={true}
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  paddingRight: 0,
+                  paddingVertical: 0,
+                }}
+              >
+                {upcomingChallenges.map((challenge) => (
+                  <TouchableOpacity
+                    key={challenge.id}
+                    onPress={() => handleCardPress(challenge.id)}
+                    activeOpacity={0.9}
                   >
-                    <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                      <Text className="text-black text-xs">
-                        {formatStartDate(challenge.startDate)}
-                      </Text>
-                    </View>
-                    <Image
-                      className="w-full h-40 rounded-t-2xl"
-                      source={
-                        challenge.attachmentUrl
-                          ? {
-                              uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
-                            }
-                          : require("../../assets/images/challenge1.png")
-                      }
-                    />
-                    <View className="px-4">
-                      <View className="mt-4">
-                        <Text className="text-white">{challenge.title}</Text>
+                    <View className="bg-secbg rounded-2xl w-52 h-auto pb-6 mt-3 me-4 relative">
+                      <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                        <Text className="text-black text-xs">
+                          {formatStartDate(challenge.startDate)}
+                        </Text>
                       </View>
-                      <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
-                        <TouchableOpacity
-                          className="flex flex-row items-center"
-                          // onPress={() => handleJoinPress(challenge.id)}
-                          activeOpacity={0.7}
-                        >
-                          <Text className="text-black text-sm px-3">Join</Text>
-                        </TouchableOpacity>
+                      <Image
+                        className="w-full h-40 rounded-t-2xl"
+                        source={
+                          challenge.attachmentUrl
+                            ? {
+                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                              }
+                            : require("../../assets/images/challenge1.png")
+                        }
+                      />
+                      <View className="px-4">
+                        <View className="mt-4">
+                          <Text className="text-white">{challenge.title}</Text>
+                        </View>
+                        <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
+                          <TouchableOpacity
+                            className="flex flex-row items-center"
+                            // onPress={() => handleJoinPress(challenge.id)}
+                            activeOpacity={0.7}
+                          >
+                            <Text className="text-black text-sm px-3">
+                              Join
+                            </Text>
+                          </TouchableOpacity>
+                        </View>
                       </View>
                     </View>
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </View>
-        </View>
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </ApiErrorBoundary>
   );
 };
 

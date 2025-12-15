@@ -1,35 +1,34 @@
-import React, { useEffect, useRef, useState } from "react";
-import { ResizeMode, Video } from "expo-av";
-import { ArrowLeftCircle, Heart, ExternalLink } from "lucide-react-native";
+import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
 import {
+  ServerPost,
+  useAddOrUpdateReactionMutation,
+  useGetAllPostsQuery,
+  useRemoveReactionMutation,
+} from "@/store/slices/communityApi";
+import { BASE_FILE_URL } from "@/utils/api";
+import { ResizeMode, Video } from "expo-av";
+import { Image } from "expo-image";
+import { ArrowLeftCircle, ExternalLink, Heart } from "lucide-react-native";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import {
+  ActivityIndicator,
   Animated,
   Dimensions,
-  Image,
   Modal,
   RefreshControl,
+  Image as RNImage,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { BASE_FILE_URL, communityAPI } from "@/utils/api";
-
-type ServerPost = {
-  id: number;
-  userId: number;
-  content: string;
-  fileFullpath: string;
-  fileType: string;
-  fileName: string;
-  imageUploadedAt?: string;
-  createdAt?: string;
-  timeAgo?: string;
-  creatorName?: string;
-  reactionsSummary?: { heart: number; like: number; fire: number };
-  userReaction?: "heart" | "like" | "fire" | null;
-};
 
 type Post = {
   id: number;
@@ -71,6 +70,16 @@ const ReactionDisplay = ({
 };
 
 const Social = () => {
+  // RTK Query hooks
+  const {
+    data: serverPosts = [],
+    isLoading: loading,
+    refetch,
+    isFetching,
+  } = useGetAllPostsQuery();
+  const [addOrUpdateReaction] = useAddOrUpdateReactionMutation();
+  const [removeReaction] = useRemoveReactionMutation();
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [imageHeights, setImageHeights] = useState<{ [key: number]: number }>(
     {}
@@ -87,7 +96,6 @@ const Social = () => {
   const animatedScale = React.useRef(new Animated.Value(0)).current;
   const animatedOpacity = React.useRef(new Animated.Value(0)).current;
   const [showEmojiPopup, setShowEmojiPopup] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const videoRef = useRef<Video>(null);
@@ -106,70 +114,61 @@ const Social = () => {
     );
   };
 
-  const fetchPosts = async () => {
-    setLoading(true);
-    try {
-      const res = await communityAPI.getAllPosts();
-      const mapped: Post[] = (res || []).map((p: ServerPost) => {
-        const isVideo = p.fileType?.toLowerCase().includes("video");
-        return {
-          id: p.id,
-          mediaUri: getFileUrl(p.fileFullpath),
-          mediaType: isVideo ? "video" : "image",
-          user: p.creatorName || "Unknown",
-          time: p.timeAgo || "",
-          content: p.content,
-          fileType: p.fileType,
-          serverPost: p,
-          reactionsSummary: p.reactionsSummary,
-          userReaction: p.userReaction,
-        };
-      });
-
-      setPosts(mapped);
-
-      const columnWidth = (screenWidth - 24) / 2;
-
-      mapped.forEach((post) => {
-        if (post.mediaType === "image" && post.mediaUri) {
-          Image.getSize(
-            post.mediaUri,
-            (width, height) => {
-              const ratio = height / width;
-              setImageHeights((prev) => ({
-                ...prev,
-                [post.id]: ratio * columnWidth,
-              }));
-            },
-            (err) => {
-              setImageHeights((prev) => ({
-                ...prev,
-                [post.id]: columnWidth * (3 / 4),
-              }));
-            }
-          );
-        } else {
-          setImageHeights((prev) => ({
-            ...prev,
-            [post.id]: columnWidth * (9 / 16),
-          }));
-          setVideoDimensions((prev) => ({
-            ...prev,
-            [post.id]: { width: 16, height: 9 },
-          }));
-        }
-      });
-    } catch (error) {
-      console.error("Error fetching community posts:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
+  // Transform server posts to Post format and calculate image heights
   useEffect(() => {
-    fetchPosts();
-  }, []);
+    if (!serverPosts || serverPosts.length === 0) return;
+
+    const mapped: Post[] = serverPosts.map((p: ServerPost) => {
+      const isVideo = p.fileType?.toLowerCase().includes("video");
+      return {
+        id: p.id,
+        mediaUri: getFileUrl(p.fileFullpath),
+        mediaType: isVideo ? "video" : "image",
+        user: p.creatorName || "Unknown",
+        time: p.timeAgo || "",
+        content: p.content,
+        fileType: p.fileType,
+        serverPost: p,
+        reactionsSummary: p.reactionsSummary,
+        userReaction: p.userReaction,
+      };
+    });
+
+    setPosts(mapped);
+
+    const columnWidth = (screenWidth - 24) / 2;
+
+    mapped.forEach((post) => {
+      if (post.mediaType === "image" && post.mediaUri) {
+        // Use React Native Image for getSize (expo-image doesn't have this method)
+        RNImage.getSize(
+          post.mediaUri,
+          (width, height) => {
+            const ratio = height / width;
+            setImageHeights((prev) => ({
+              ...prev,
+              [post.id]: ratio * columnWidth,
+            }));
+          },
+          (err) => {
+            setImageHeights((prev) => ({
+              ...prev,
+              [post.id]: columnWidth * (3 / 4),
+            }));
+          }
+        );
+      } else {
+        setImageHeights((prev) => ({
+          ...prev,
+          [post.id]: columnWidth * (9 / 16),
+        }));
+        setVideoDimensions((prev) => ({
+          ...prev,
+          [post.id]: { width: 16, height: 9 },
+        }));
+      }
+    });
+  }, [serverPosts, screenWidth]);
 
   const handleReact = async (
     postId: number,
@@ -178,57 +177,22 @@ const Social = () => {
     const reactionTypeMap = { heart: 1, like: 2, fire: 3 };
     const reactionType = reactionTypeMap[reactionName];
 
-    const originalPosts = [...posts];
-    const postIndex = originalPosts.findIndex((p) => p.id === postId);
-    if (postIndex === -1) return;
+    // Find current post to check if we're removing or adding
+    const currentPost = posts.find((p) => p.id === postId);
+    if (!currentPost) return;
 
-    const postToUpdate = { ...originalPosts[postIndex] };
-    const currentReaction = postToUpdate.userReaction;
-
-    const newSummary = {
-      heart: 0,
-      like: 0,
-      fire: 0,
-      ...postToUpdate.reactionsSummary,
-    };
-
-    if (currentReaction === reactionName) {
-      postToUpdate.userReaction = null;
-      newSummary[reactionName] = Math.max(0, newSummary[reactionName] - 1);
-    } else {
-      if (currentReaction) {
-        newSummary[currentReaction] = Math.max(
-          0,
-          newSummary[currentReaction] - 1
-        );
-      }
-      postToUpdate.userReaction = reactionName;
-      newSummary[reactionName] = newSummary[reactionName] + 1;
-    }
-
-    postToUpdate.reactionsSummary = newSummary;
-
-    const newPosts = [...originalPosts];
-    newPosts[postIndex] = postToUpdate;
-
-    setPosts(newPosts);
-
-    if (selectedPost && selectedPost.id === postId) {
-      setSelectedPost(postToUpdate);
-    }
+    const isRemoving = currentPost.userReaction === reactionName;
 
     try {
-      if (postToUpdate.userReaction === null) {
-        await communityAPI.removeReaction(postId);
+      if (isRemoving) {
+        await removeReaction(postId).unwrap();
       } else {
-        await communityAPI.addOrUpdateReaction(postId, reactionType);
+        await addOrUpdateReaction({ postId, reactionType }).unwrap();
       }
+      // Optimistic updates are handled by RTK Query automatically
     } catch (error) {
       console.error("Failed to update reaction:", error);
-      setPosts(originalPosts);
-      if (selectedPost && selectedPost.id === postId) {
-        setSelectedPost(originalPosts[postIndex]);
-      }
+      // RTK Query will automatically rollback on error
     }
   };
 
@@ -269,41 +233,12 @@ const Social = () => {
     });
   };
 
-  const handleSelectPost = async (post: Post) => {
+  const handleSelectPost = (post: Post) => {
     setShowVideoControls(false);
-
-    try {
-      if ((communityAPI as any).getPostById) {
-        const detailed: ServerPost = await (communityAPI as any).getPostById(
-          post.id
-        );
-        const mapped: Post = {
-          id: detailed.id,
-          mediaUri: getFileUrl(detailed.fileFullpath),
-          mediaType: detailed.fileType?.toLowerCase().includes("video")
-            ? "video"
-            : "image",
-          user: detailed.creatorName || post.user,
-          time: detailed.timeAgo || post.time,
-          content: detailed.content,
-          fileType: detailed.fileType,
-          serverPost: detailed,
-          reactionsSummary: detailed.reactionsSummary,
-          userReaction: detailed.userReaction,
-        };
-        setSelectedPost(mapped);
-      } else {
-        setSelectedPost(post);
-      }
-
-      // --- SCROLL FIX 2: Call the scrollTo method here ---
-      scrollViewRef.current?.scrollTo({ y: 0, animated: false }); // Use animated: true for a smooth scroll
-    } catch (err) {
-      console.warn("Failed to fetch post by id, falling back to local:", err);
-      setSelectedPost(post);
-      // --- Also scroll to top on fallback ---
-      scrollViewRef.current?.scrollTo({ y: 0, animated: false });
-    }
+    // Use the post data we already have from RTK Query cache
+    setSelectedPost(post);
+    // --- SCROLL FIX 2: Call the scrollTo method here ---
+    scrollViewRef.current?.scrollTo({ y: 0, animated: false });
   };
 
   useEffect(() => {
@@ -331,11 +266,15 @@ const Social = () => {
     }
   }, [selectedPost]);
 
-  const columnLeft: Post[] = [];
-  const columnRight: Post[] = [];
-  posts.forEach((p, i) => {
-    (i % 2 === 0 ? columnLeft : columnRight).push(p);
-  });
+  // Memoize column split for performance
+  const { columnLeft, columnRight } = useMemo(() => {
+    const left: Post[] = [];
+    const right: Post[] = [];
+    posts.forEach((p, i) => {
+      (i % 2 === 0 ? left : right).push(p);
+    });
+    return { columnLeft: left, columnRight: right };
+  }, [posts]);
 
   const reactionEmojiMap = {
     heart: "❤️",
@@ -343,70 +282,76 @@ const Social = () => {
     fire: "🔥",
   };
 
-  const renderPost = (post: Post) => (
-    <View key={post.id} className="mb-4">
-      <TouchableOpacity
-        onPress={() => handleSelectPost(post)}
-        activeOpacity={0.9}
-      >
-        <View className="relative">
-          {post.mediaType === "image" ? (
-            <Image
-              source={{ uri: post.mediaUri }}
-              style={{
-                width: "100%",
-                height: imageHeights[post.id] || 200,
-                borderRadius: 16,
-              }}
-              resizeMode="cover"
-            />
-          ) : (
-            <View
-              style={{
-                width: "100%",
-                aspectRatio: videoDimensions?.[post.id]
-                  ? videoDimensions[post.id].width /
-                    videoDimensions[post.id].height
-                  : 16 / 9,
-                borderRadius: 16,
-                backgroundColor: "#000",
-                overflow: "hidden",
-              }}
-            >
-              <Video
+  const renderPost = useCallback(
+    (post: Post) => (
+      <View key={post.id} className="mb-4">
+        <TouchableOpacity
+          onPress={() => handleSelectPost(post)}
+          activeOpacity={0.9}
+        >
+          <View className="relative">
+            {post.mediaType === "image" ? (
+              <Image
                 source={{ uri: post.mediaUri }}
-                style={{ width: "100%", height: "100%" }}
-                resizeMode={ResizeMode.COVER}
-                isMuted={true}
-                shouldPlay={true}
-                isLooping={true}
-                volume={0}
-                onReadyForDisplay={(event) => {
-                  const { width, height } = event.naturalSize;
-                  setVideoDimensions((prev) => ({
-                    ...prev,
-                    [post.id]: { width, height },
-                  }));
+                style={{
+                  width: "100%",
+                  height: imageHeights[post.id] || 200,
+                  borderRadius: 16,
                 }}
+                contentFit="cover"
               />
-            </View>
-          )}
+            ) : (
+              <View
+                style={{
+                  width: "100%",
+                  aspectRatio: videoDimensions?.[post.id]
+                    ? videoDimensions[post.id].width /
+                      videoDimensions[post.id].height
+                    : 16 / 9,
+                  borderRadius: 16,
+                  backgroundColor: "#000",
+                  overflow: "hidden",
+                }}
+              >
+                <Video
+                  source={{ uri: post.mediaUri }}
+                  style={{ width: "100%", height: "100%" }}
+                  resizeMode={ResizeMode.COVER}
+                  isMuted={true}
+                  shouldPlay={true}
+                  isLooping={true}
+                  volume={0}
+                  onReadyForDisplay={(event) => {
+                    const { width, height } = event.naturalSize;
+                    setVideoDimensions((prev) => ({
+                      ...prev,
+                      [post.id]: { width, height },
+                    }));
+                  }}
+                />
+              </View>
+            )}
 
-          <ReactionDisplay reactionsSummary={post.reactionsSummary} />
-        </View>
-      </TouchableOpacity>
+            <ReactionDisplay reactionsSummary={post.reactionsSummary} />
+          </View>
+        </TouchableOpacity>
 
-      <View className="flex-row items-center mt-2">
-        <Image
-          source={require("../../assets/images/profile.png")}
-          className="w-8 h-8 rounded-full"
-        />
-        <View className="ml-2">
-          <Text className="text-white text-sm">{post.user}</Text>
-          <Text className="text-white/50 text-xs">{post.time}</Text>
+        <View className="flex-row items-center mt-2">
+          <Image
+            source={require("../../assets/images/profile.png")}
+            style={{ width: 32, height: 32, borderRadius: 16 }}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            recyclingKey="profile-avatar"
+          />
+          <View className="ml-2">
+            <Text className="text-white text-sm">{post.user}</Text>
+            <Text className="text-white/50 text-xs">{post.time}</Text>
+          </View>
         </View>
       </View>
-    </View>
+    ),
+    [imageHeights, videoDimensions, handleSelectPost]
   );
 
   if (selectedPost) {
@@ -419,10 +364,11 @@ const Social = () => {
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => {
+              refreshing={refreshing || isFetching}
+              onRefresh={async () => {
                 setRefreshing(true);
-                fetchPosts();
+                await refetch();
+                setRefreshing(false);
               }}
             />
           }
@@ -458,7 +404,7 @@ const Social = () => {
                       aspectRatio: 1,
                       borderRadius: 24,
                     }}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 ) : (
                   <View
@@ -576,7 +522,7 @@ const Social = () => {
                   <Image
                     source={{ uri: selectedPost.mediaUri }}
                     style={{ width: screenWidth, height: screenHeight }}
-                    resizeMode="contain"
+                    contentFit="contain"
                   />
                 ) : (
                   <Video
@@ -595,7 +541,10 @@ const Social = () => {
           <View className="flex-row items-start px-4 py-4">
             <Image
               source={require("../../assets/images/profile.png")}
-              className="w-12 h-12 rounded-full"
+              style={{ width: 48, height: 48, borderRadius: 24 }}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              recyclingKey="profile-avatar"
             />
             <View className="ml-3 flex-1">
               <View className="flex-row justify-between gap-2">
@@ -685,7 +634,7 @@ const Social = () => {
                               height: imageHeights[post.id] || 200,
                               borderRadius: 16,
                             }}
-                            resizeMode="cover"
+                            contentFit="cover"
                           />
                         ) : (
                           <View
@@ -725,7 +674,10 @@ const Social = () => {
                       <View className="flex-row items-center mt-2">
                         <Image
                           source={require("../../assets/images/profile.png")}
-                          className="w-8 h-8 rounded-full"
+                          style={{ width: 32, height: 32, borderRadius: 16 }}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          recyclingKey="profile-avatar"
                         />
                         <View className="ml-2">
                           <Text className="text-white text-sm">
@@ -759,7 +711,7 @@ const Social = () => {
                               height: imageHeights[post.id] || 200,
                               borderRadius: 16,
                             }}
-                            resizeMode="cover"
+                            contentFit="cover"
                           />
                         ) : (
                           <View
@@ -799,7 +751,10 @@ const Social = () => {
                       <View className="flex-row items-center mt-2">
                         <Image
                           source={require("../../assets/images/profile.png")}
-                          className="w-8 h-8 rounded-full"
+                          style={{ width: 32, height: 32, borderRadius: 16 }}
+                          contentFit="cover"
+                          cachePolicy="memory-disk"
+                          recyclingKey="profile-avatar"
                         />
                         <View className="ml-2">
                           <Text className="text-white text-sm">
@@ -821,58 +776,61 @@ const Social = () => {
   }
 
   return (
-    <View className="flex-1 bg-secbg">
-      <SafeAreaView
-        className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.84,
-          elevation: 5,
-        }}
-      >
-        <View className="px-6 bg-secbg flex flex-row items-center justify-between">
-          <Text className="text-white text-3xl font-bold">Social</Text>
-        </View>
-      </SafeAreaView>
-
-      {loading && (
-        <View
+    <ApiErrorBoundary>
+      <View className="flex-1 bg-secbg">
+        <SafeAreaView
+          className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
           style={{
-            position: "absolute",
-            top: 140,
-            left: 0,
-            right: 0,
-            alignItems: "center",
-            zIndex: 50,
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
           }}
         >
-          <ActivityIndicator size="large" />
-        </View>
-      )}
+          <View className="px-6 bg-secbg flex flex-row items-center justify-between">
+            <Text className="text-white text-3xl font-bold">Social</Text>
+          </View>
+        </SafeAreaView>
 
-      <ScrollView
-        className="flex-1 bg-black px-3"
-        style={{ marginTop: 120, paddingTop: 8 }}
-        contentContainerStyle={{ paddingBottom: 20 }}
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              fetchPosts();
+        {loading && (
+          <View
+            style={{
+              position: "absolute",
+              top: 140,
+              left: 0,
+              right: 0,
+              alignItems: "center",
+              zIndex: 50,
             }}
-          />
-        }
-      >
-        <View className="flex-row justify-between">
-          <View className="w-[49%]">{columnLeft.map(renderPost)}</View>
-          <View className="w-[49%]">{columnRight.map(renderPost)}</View>
-        </View>
-      </ScrollView>
-    </View>
+          >
+            <ActivityIndicator size="large" />
+          </View>
+        )}
+
+        <ScrollView
+          className="flex-1 bg-black px-3"
+          style={{ marginTop: 120, paddingTop: 8 }}
+          contentContainerStyle={{ paddingBottom: 20 }}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing || isFetching}
+              onRefresh={async () => {
+                setRefreshing(true);
+                await refetch();
+                setRefreshing(false);
+              }}
+            />
+          }
+        >
+          <View className="flex-row justify-between">
+            <View className="w-[49%]">{columnLeft.map(renderPost)}</View>
+            <View className="w-[49%]">{columnRight.map(renderPost)}</View>
+          </View>
+        </ScrollView>
+      </View>
+    </ApiErrorBoundary>
   );
 };
 

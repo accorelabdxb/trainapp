@@ -1,10 +1,24 @@
+import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
 import { LogoutButton } from "@/components/common/LogoutButton";
 import { useProfile } from "@/context/hooks/useProfile";
-import { attendanceAPI, BASE_FILE_URL, challengesAPI } from "@/utils/api";
+import { usePrefetchOnFocus } from "@/hooks/usePrefetch";
+import {
+  useCheckInMutation,
+  useGetAttendanceSummaryQuery,
+} from "@/store/slices/attendanceApi";
+import { useGetAllChallengesQuery } from "@/store/slices/challengesApi";
+import { BASE_FILE_URL } from "@/utils/api";
 import { useRouter } from "expo-router";
 import moment from "moment";
-import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { StatCard } from "../../components/common/StatCard";
 import { PointsCard } from "../../components/dashboard/PointsCard";
@@ -24,13 +38,26 @@ const Dashboard = () => {
   const router = useRouter();
   const { user } = useProfile();
   console.log("user:", user);
-  const [attendance, setAttendance] = React.useState<Record<string, boolean>>({});
-    const [challenges, setChallenges] = useState<Challenge[]>([]);
-  const [isLoadingChallenges, setIsLoadingChallenges] = useState(true);
+
+  // Prefetch adjacent tab data for better performance
+  usePrefetchOnFocus();
+  const [attendance, setAttendance] = React.useState<Record<string, boolean>>(
+    {}
+  );
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [coinsEarned, setCoinsEarned] = React.useState(0);
-  const [isLoadingAttendance, setIsLoadingAttendance] = React.useState(true);
-  const [isCheckingIn, setIsCheckingIn] = React.useState(false);
+
+  // RTK Query hooks
+  const startDate = moment().startOf("week").format("YYYY-MM-DD");
+  const endDate = moment().endOf("week").format("YYYY-MM-DD");
+  const { data: attendanceData, isLoading: isLoadingAttendance } =
+    useGetAttendanceSummaryQuery(
+      { startDate, endDate },
+      { skip: !user?.isProfileExist }
+    );
+  const { data: challenges = [], isLoading: isLoadingChallenges } =
+    useGetAllChallengesQuery();
+  const [checkIn, { isLoading: isCheckingIn }] = useCheckInMutation();
 
   const handleImageButtonPress = () => {
     console.log("Image background button pressed!");
@@ -41,10 +68,10 @@ const Dashboard = () => {
     router.push("/redeem");
   };
   const handleAttendanceSummaryPress = () => {
-  router.push("/attendancesummary");  
-};
+    router.push("/attendancesummary");
+  };
 
-const handlePointsPress = () => {
+  const handlePointsPress = () => {
     console.log("Points pressed!");
     // Pass the coinsEarned state as a parameter
     router.push({
@@ -57,60 +84,42 @@ const handlePointsPress = () => {
     moment().startOf("week").add(i, "day")
   );
 
+  // Process attendance data from RTK Query
   useEffect(() => {
-    if (!user?.isProfileExist) return;
+    if (!attendanceData) return;
 
-    const fetchAttendance = async () => {
-      try {
-        setIsLoadingAttendance(true);
-        
-        const startDate = moment().startOf("week").format("YYYY-MM-DD");
-        const endDate = moment().endOf("week").format("YYYY-MM-DD");
+    const newCoinsEarned = attendanceData?.totalcoinsEarned || 0;
+    console.log("coins earned:", newCoinsEarned);
+    setCoinsEarned(newCoinsEarned);
 
-        const res = await attendanceAPI.getAttendanceSummary(
-          startDate,
-          endDate
-        );
-        const newCoinsEarned = res?.totalcoinsEarned || 0;
-        console.log("coins earned:", newCoinsEarned);
-        setCoinsEarned(newCoinsEarned);
+    const mapped: Record<string, boolean> = {};
 
-        const mapped: Record<string, boolean> = {};
+    const currentWeekDays = Array.from({ length: 7 }).map((_, i) =>
+      moment().startOf("week").add(i, "day").format("YYYY-MM-DD")
+    );
 
-        const currentWeekDays = Array.from({ length: 7 }).map((_, i) =>
-          moment().startOf("week").add(i, "day").format("YYYY-MM-DD")
-        );
+    currentWeekDays.forEach((dateStr) => {
+      mapped[dateStr] = false;
+    });
 
-        currentWeekDays.forEach((dateStr) => {
-          mapped[dateStr] = false;
-        });
+    if (attendanceData?.history && Array.isArray(attendanceData.history)) {
+      attendanceData.history.forEach(
+        (entry: { checkInTime: string; Checkinstatus: number }) => {
+          const dateStr = moment
+            .utc(entry.checkInTime)
+            .local()
+            .format("YYYY-MM-DD");
 
-        if (res?.history && Array.isArray(res.history)) {
-          res.history.forEach(
-            (entry: { checkInTime: string; Checkinstatus: number }) => {
-              const dateStr = moment
-                .utc(entry.checkInTime)
-                .local()
-                .format("YYYY-MM-DD");
-
-              // Only mark as true if user actually checked in (status = 1)
-              if (entry.Checkinstatus === 1) {
-                mapped[dateStr] = true;
-              }
-            }
-          );
+          // Only mark as true if user actually checked in (status = 1)
+          if (entry.Checkinstatus === 1) {
+            mapped[dateStr] = true;
+          }
         }
+      );
+    }
 
-        setAttendance(mapped);
-      } catch (error) {
-        console.error("Error fetching attendance:", error);
-      } finally {
-        setIsLoadingAttendance(false);
-      }
-    };
-
-    fetchAttendance();
-  }, [user?.isProfileExist]);
+    setAttendance(mapped);
+  }, [attendanceData]);
 
   const handleCheckIn = async (dateStr: string) => {
     const todayStr = moment().format("YYYY-MM-DD");
@@ -125,9 +134,8 @@ const handlePointsPress = () => {
     }
 
     try {
-      setIsCheckingIn(true);
-      const res = await attendanceAPI.checkIn();
-      console.log("Check-in response:", res);
+      await checkIn().unwrap();
+      console.log("Check-in successful");
 
       setAttendance((prev) => ({
         ...prev,
@@ -135,36 +143,18 @@ const handlePointsPress = () => {
       }));
     } catch (err) {
       console.error("Error during check-in:", err);
-    } finally {
-      setIsCheckingIn(false);
     }
   };
-    useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        setIsLoadingChallenges(true);
-        // Use the function we created in Step 1
-        const data = await challengesAPI.getAllChallenges(); 
-        setChallenges(data);
-      } catch (error) {
-        console.error("Error fetching challenges on dashboard:", error);
-      } finally {
-        setIsLoadingChallenges(false);
-      }
-    };
-
-    fetchChallenges();
-  }, []);
-    const handleChallengePress = (challengeId: number) => {
+  const handleChallengePress = (challengeId: number) => {
     router.push({
       pathname: "/weightlosschallenge", // Your details screen
-      params: { id: challengeId },      // Pass the challenge ID
+      params: { id: challengeId }, // Pass the challenge ID
     });
   };
-   const formatEndDate = (endDateString: string) => {
+  const formatEndDate = (endDateString: string) => {
     const endDate = moment(endDateString);
-    const today = moment().startOf('day');
-    const diffDays = endDate.startOf('day').diff(today, 'days');
+    const today = moment().startOf("day");
+    const diffDays = endDate.startOf("day").diff(today, "days");
 
     if (diffDays < 0) return "Ended";
     if (diffDays === 0) return "Ends today";
@@ -173,297 +163,118 @@ const handlePointsPress = () => {
   };
 
   return (
-    <View className="flex-1 bg-secbg">
-      {/* Fixed Header */}
-      <SafeAreaView
-        className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
-        style={{
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.84,
-          elevation: 5,
-        }}
-      >
-        <View className="px-6 bg-secbg flex flex-row items-center justify-between">
-          <Image
-            className="h-6 w-36"
-            source={require("../../assets/images/logo.png")}
-          />
-          <View className="flex flex-row items-center justify-center">
+    <ApiErrorBoundary>
+      <View className="flex-1 bg-secbg">
+        {/* Fixed Header */}
+        <SafeAreaView
+          className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
+          style={{
+            shadowColor: "#000",
+            shadowOffset: { width: 0, height: 2 },
+            shadowOpacity: 0.25,
+            shadowRadius: 3.84,
+            elevation: 5,
+          }}
+        >
+          <View className="px-6 bg-secbg flex flex-row items-center justify-between">
             <Image
-              className="h-10 w-10 rounded-full"
-              source={require("../../assets/images/profile.png")}
+              className="h-6 w-36"
+              source={require("../../assets/images/logo.png")}
             />
-            <Bell className="text-white ms-6" size={28} strokeWidth={1.5} />
+            <View className="flex flex-row items-center justify-center">
+              <Image
+                className="h-10 w-10 rounded-full"
+                source={require("../../assets/images/profile.png")}
+              />
+              <Bell className="text-white ms-6" size={28} strokeWidth={1.5} />
+            </View>
           </View>
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
 
-      {/* Scrollable Content */}
-      <ScrollView
-        className="flex-1 bg-black"
-        style={{ marginTop: 120 }}
-        contentContainerStyle={{ paddingBottom: 10 }}
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="pt-8">
-          <View className="flex flex-row items-center justify-between bg-secbg p-4 px-4 mx-2 rounded-2xl">
-            <UserGreeting />
-            <PointsCard onPress={handlePointsPress} coinsEarned={coinsEarned} />
-          </View>
-          
-          <View className="bg-secbg p-4 px-4 mt-8 mx-2 rounded-2xl">
-            <View className="flex flex-row items-center justify-between mb-2">
-              <Text className="text-white text-lg">
-                Consistency is Your Superpower! 💪
-              </Text>
-              <CircleChevronRight
-               onPress={handleAttendanceSummaryPress}
-                className="text-white/70"
-                size={18}
-                strokeWidth={1.5}
+        {/* Scrollable Content */}
+        <ScrollView
+          className="flex-1 bg-black"
+          style={{ marginTop: 120 }}
+          contentContainerStyle={{ paddingBottom: 10 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View className="pt-8">
+            <View className="flex flex-row items-center justify-between bg-secbg p-4 px-4 mx-2 rounded-2xl">
+              <UserGreeting />
+              <PointsCard
+                onPress={handlePointsPress}
+                coinsEarned={coinsEarned}
               />
             </View>
-            
-            {/* Loading state for attendance dates */}
-            {isLoadingAttendance ? (
-              <View className="flex items-center justify-center h-20 mt-2">
-                <ActivityIndicator size="large" color="#ffffff" />
-                <Text className="text-white/70 text-sm mt-2">Loading attendance...</Text>
-              </View>
-            ) : (
-              <View className="flex flex-row items-center justify-between">
-                {daysOfWeek.map((day) => {
-                  const dateStr = day.format("YYYY-MM-DD");
-                  const todayStr = moment().format("YYYY-MM-DD");
-                  const attended = attendance[dateStr] || false;
-                  const isToday = dateStr === todayStr;
 
-                  return (
-                    <View
-                      key={dateStr}
-                      className="flex justify-center items-center mt-2"
-                    >
-                      <Text className="font-normal text-xs text-white mb-1">
-                        {day.format("ddd")}
-                      </Text>
-                      <TouchableOpacity
-                        className={`rounded-full w-12 h-12 border border-white/10 flex items-center justify-center ${
-                          attended ? "bg-green-600" : "bg-input"
-                        } ${isCheckingIn && isToday ? "opacity-70" : ""}`}
-                        onPress={() => {
-                          if (isToday && !isCheckingIn) {
-                            handleCheckIn(dateStr);
-                          } else if (!isToday) {
-                            console.log("Can only check in for today");
-                          }
-                        }}
-                        disabled={isCheckingIn && isToday}
-                      >
-                        {isCheckingIn && isToday ? (
-                          <ActivityIndicator size="small" color="#ffffff" />
-                        ) : (
-                          <Text className="text-white/80 font-semibold text-sm">
-                            {day.format("D")}
-                          </Text>
-                        )}
-                      </TouchableOpacity>
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-
-          <View className="mt-8 px-4">
-            <Text className="text-white font-bold text-xl">
-              You're in the gym
-            </Text>
-            <View className="flex flex-row justify-between items-center">
-              <ScrollView
-                horizontal={true}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingRight: 0,
-                  paddingVertical: 0,
-                }}
-              >
-                {workoutStats.map((stat, index) => (
-                  <StatCard
-                    key={index}
-                    icon={stat.icon}
-                    label={stat.label}
-                    value={stat.value}
-                    subtitle={stat.subtitle}
-                  />
-                ))}
-              </ScrollView>
-            </View>
-          </View>
-          
-          <View className="mt-8 px-4">
-            <View className="flex flex-row justify-between items-center">
-              <TouchableOpacity
-                className="bg-secbg rounded-2xl me-4 w-6/12 h-60 overflow-hidden"
-                onPress={handleImageButtonPress}
-                activeOpacity={0.7}
-              >
-                <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                  <Text className="text-black text-xs">Nihas Latheef</Text>
-                </View>
-                <View className="rounded-2xl flex items-center justify-center">
-                  <Image
-                    className="w-full h-full"
-                    source={require("../../assets/images/photooftheday.jpg")}
-                  />
-                  <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-white font-bold text-xs">
-                      Body Zone Star of the week
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-              <TouchableOpacity
-                className="bg-secbg rounded-2xl w-6/12 h-60 overflow-hidden"
-                onPress={handleImageButtonPress}
-                activeOpacity={0.7}
-              >
-                <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                  <Text className="text-black text-xs">Manuprasad</Text>
-                </View>
-                <View className="rounded-2xl flex items-center justify-center">
-                  <Image
-                    className="w-full h-full"
-                    source={require("../../assets/images/starof.jpg")}
-                  />
-                  <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-white font-bold text-xs">
-                      Photo of the day
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-         <View className="mt-8 px-4">
-  <Text className="text-white font-bold text-xl">Challenges</Text>
-  
-  {/* Show a loading spinner while fetching data */}
-  {isLoadingChallenges ? (
-    <View className="flex items-center justify-center h-48">
-      <ActivityIndicator size="large" color="#ffffff" />
-    </View>
-  ) : (
-    <View className="flex flex-row justify-between items-center">
-      <ScrollView
-        horizontal={true}
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{
-          flexDirection: "row",
-          alignItems: "center",
-          paddingVertical: 0,
-        }}
-      >
-        {/* Map over the first 4 challenges from the state */}
-        {challenges.slice(0, 4).map((challenge) => (
-          <TouchableOpacity
-            key={challenge.id}
-            className="bg-secbg rounded-2xl w-52 pb-6 mt-3 me-4 flex items-center relative"
-            activeOpacity={0.8}
-            onPress={() => handleChallengePress(challenge.id)} // Use navigation handler
-          >
-            <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-              {/* Use date formatting function */}
-              <Text className="text-black text-xs">
-                {formatEndDate(challenge.endDate)}
-              </Text>
-            </View>
-
-            <Image
-              className="w-full h-40 rounded-t-2xl"
-              // Use dynamic image with a fallback
-              source={
-                challenge.attachmentUrl
-                  ? { uri: `${BASE_FILE_URL}${challenge.attachmentUrl}` }
-                  : require("../../assets/images/challenge1.png") // Your fallback image
-              }
-            />
-            
-            {/* Use dynamic title */}
-            <Text className="text-white leading-5 py-4 px-4 mb-4 self-start font-semibold">
-              {challenge.title}
-            </Text>
-
-            <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-              <View className="flex flex-row items-center">
-                {/* Use dynamic button text based on participation */}
-                <Text className="text-black text-sm px-3">
-                  {challenge.isUserParticipating ? "View" : "Join"}
+            <View className="bg-secbg p-4 px-4 mt-8 mx-2 rounded-2xl">
+              <View className="flex flex-row items-center justify-between mb-2">
+                <Text className="text-white text-lg">
+                  Consistency is Your Superpower! 💪
                 </Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-    </View>
-  )}
-</View>
-          
-          <View className="mt-8 px-4">
-            <Text className="text-white font-bold text-xl">
-              Leaderboard for the week
-            </Text>
-            <View className="flex flex-row items-start mt-6">
-              <View className="w-4/12 h-auto flex flex-col">
-                <View className="flex-1 items-center mt-14">
-                  <Image
-                    className="rounded-full w-14 h-14 mb-2"
-                    source={require("../../assets/images/profile.png")}
-                  />
-                  <Text className="text-white text-center">Nihas Latheef</Text>
-                </View>
-                <Image
-                  source={require("../../assets/images/silver.png")}
-                  className="w-full"
+                <CircleChevronRight
+                  onPress={handleAttendanceSummaryPress}
+                  className="text-white/70"
+                  size={18}
+                  strokeWidth={1.5}
                 />
               </View>
 
-              <View className="w-4/12 h-auto flex flex-col">
-                <View className="flex-1 items-center">
-                  <Image
-                    className="rounded-full w-20 h-20 mb-2  border-amber-300 border-2"
-                    source={require("../../assets/images/profile.png")}
-                  />
-                  <Text className="text-white mb-4 text-center">
-                    Manu Prasad
+              {/* Loading state for attendance dates */}
+              {isLoadingAttendance ? (
+                <View className="flex items-center justify-center h-20 mt-2">
+                  <ActivityIndicator size="large" color="#ffffff" />
+                  <Text className="text-white/70 text-sm mt-2">
+                    Loading attendance...
                   </Text>
                 </View>
-                <Image
-                  source={require("../../assets/images/gold.png")}
-                  className="w-full"
-                />
-              </View>
+              ) : (
+                <View className="flex flex-row items-center justify-between">
+                  {daysOfWeek.map((day) => {
+                    const dateStr = day.format("YYYY-MM-DD");
+                    const todayStr = moment().format("YYYY-MM-DD");
+                    const attended = attendance[dateStr] || false;
+                    const isToday = dateStr === todayStr;
 
-              <View className="w-4/12 h-auto flex flex-col">
-                <View className="flex-1 items-center">
-                  <Image
-                    className="rounded-full w-12 h-12 mb-2 mt-24"
-                    source={require("../../assets/images/profile.png")}
-                  />
-                  <Text className="text-white text-center ">Choice Joseph</Text>
+                    return (
+                      <View
+                        key={dateStr}
+                        className="flex justify-center items-center mt-2"
+                      >
+                        <Text className="font-normal text-xs text-white mb-1">
+                          {day.format("ddd")}
+                        </Text>
+                        <TouchableOpacity
+                          className={`rounded-full w-12 h-12 border border-white/10 flex items-center justify-center ${attended ? "bg-green-600" : "bg-input"
+                            } ${isCheckingIn && isToday ? "opacity-70" : ""}`}
+                          onPress={() => {
+                            if (isToday && !isCheckingIn) {
+                              handleCheckIn(dateStr);
+                            } else if (!isToday) {
+                              console.log("Can only check in for today");
+                            }
+                          }}
+                          disabled={isCheckingIn && isToday}
+                        >
+                          {isCheckingIn && isToday ? (
+                            <ActivityIndicator size="small" color="#ffffff" />
+                          ) : (
+                            <Text className="text-white/80 font-semibold text-sm">
+                              {day.format("D")}
+                            </Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    );
+                  })}
                 </View>
-                <Image
-                  source={require("../../assets/images/bronze.png")}
-                  className="w-full"
-                />
-              </View>
+              )}
             </View>
 
-            <View className="mt-8">
+            <View className="mt-8 px-4">
+              <Text className="text-white font-bold text-xl">
+                You're in the gym
+              </Text>
               <View className="flex flex-row justify-between items-center">
                 <ScrollView
                   horizontal={true}
@@ -475,62 +286,252 @@ const handlePointsPress = () => {
                     paddingVertical: 0,
                   }}
                 >
-                  <View className="rounded-2xl h-auto pb-6 mt-3 me-4 flex flex-row items-center justify-center">
-                    <View className="me-4 relative">
-                      <TouchableOpacity
-                        className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                        onPress={handleRedeemPress}
-                        activeOpacity={0.7}
-                      >
-                        <Text className="text-white font-bold text-sm px-3">
-                          Redeem
-                        </Text>
-                      </TouchableOpacity>
-                      <Image
-                        className="rounded-xl w-80 h-80"
-                        source={require("../../assets/images/ad1.jpg")}
-                      />
-                    </View>
-                    <View className="me-4 relative">
-                      <TouchableOpacity
-                        className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                        onPress={handleRedeemPress}
-                        activeOpacity={0.7}
-                      >
-                        <Text className="text-white font-bold text-sm px-3">
-                          Redeem
-                        </Text>
-                      </TouchableOpacity>
-                      <Image
-                        className="rounded-xl w-80 h-80"
-                        source={require("../../assets/images/ad3.jpg")}
-                      />
-                    </View>
-                    <View>
-                      <TouchableOpacity
-                        className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                        onPress={handleRedeemPress}
-                        activeOpacity={0.7}
-                      >
-                        <Text className="text-white font-bold text-sm px-3">
-                          Redeem
-                        </Text>
-                      </TouchableOpacity>
-                      <Image
-                        className="rounded-xl w-80 h-80"
-                        source={require("../../assets/images/ad2.png")}
-                      />
-                    </View>
-                  </View>
+                  {workoutStats.map((stat, index) => (
+                    <StatCard
+                      key={index}
+                      icon={stat.icon}
+                      label={stat.label}
+                      value={stat.value}
+                      subtitle={stat.subtitle}
+                    />
+                  ))}
                 </ScrollView>
               </View>
             </View>
+
+            <View className="mt-8 px-4">
+              <View className="flex flex-row justify-between items-center">
+                <TouchableOpacity
+                  className="bg-secbg rounded-2xl me-4 w-6/12 h-60 overflow-hidden"
+                  onPress={handleImageButtonPress}
+                  activeOpacity={0.7}
+                >
+                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                    <Text className="text-black text-xs">Nihas Latheef</Text>
+                  </View>
+                  <View className="rounded-2xl flex items-center justify-center">
+                    <Image
+                      className="w-full h-full"
+                      source={require("../../assets/images/photooftheday.jpg")}
+                    />
+                    <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                      <Text className="text-white font-bold text-xs">
+                        Body Zone Star of the week
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  className="bg-secbg rounded-2xl w-6/12 h-60 overflow-hidden"
+                  onPress={handleImageButtonPress}
+                  activeOpacity={0.7}
+                >
+                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                    <Text className="text-black text-xs">Manuprasad</Text>
+                  </View>
+                  <View className="rounded-2xl flex items-center justify-center">
+                    <Image
+                      className="w-full h-full"
+                      source={require("../../assets/images/starof.jpg")}
+                    />
+                    <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                      <Text className="text-white font-bold text-xs">
+                        Photo of the day
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View className="mt-8 px-4">
+              <Text className="text-white font-bold text-xl">Challenges</Text>
+
+              {/* Show a loading spinner while fetching data */}
+              {isLoadingChallenges ? (
+                <View className="flex items-center justify-center h-48">
+                  <ActivityIndicator size="large" color="#ffffff" />
+                </View>
+              ) : (
+                <View className="flex flex-row justify-between items-center">
+                  <ScrollView
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingVertical: 0,
+                    }}
+                  >
+                    {/* Map over the first 4 challenges from the state */}
+                    {challenges.slice(0, 4).map((challenge) => (
+                      <TouchableOpacity
+                        key={challenge.id}
+                        className="bg-secbg rounded-2xl w-52 pb-6 mt-3 me-4 flex items-center relative"
+                        activeOpacity={0.8}
+                        onPress={() => handleChallengePress(challenge.id)} // Use navigation handler
+                      >
+                        <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
+                          {/* Use date formatting function */}
+                          <Text className="text-black text-xs">
+                            {formatEndDate(challenge.endDate)}
+                          </Text>
+                        </View>
+
+                        <Image
+                          className="w-full h-40 rounded-t-2xl"
+                          // Use dynamic image with a fallback
+                          source={
+                            challenge.attachmentUrl
+                              ? {
+                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                              }
+                              : require("../../assets/images/challenge1.png") // Your fallback image
+                          }
+                        />
+
+                        {/* Use dynamic title */}
+                        <Text className="text-white leading-5 py-4 px-4 mb-4 self-start font-semibold">
+                          {challenge.title}
+                        </Text>
+
+                        <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
+                          <View className="flex flex-row items-center">
+                            {/* Use dynamic button text based on participation */}
+                            <Text className="text-black text-sm px-3">
+                              {challenge.isUserParticipating ? "View" : "Join"}
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            <View className="mt-8 px-4">
+              <Text className="text-white font-bold text-xl">
+                Leaderboard for the week
+              </Text>
+              <View className="flex flex-row items-start mt-6">
+                <View className="w-4/12 h-auto flex flex-col">
+                  <View className="flex-1 items-center mt-14">
+                    <Image
+                      className="rounded-full w-14 h-14 mb-2"
+                      source={require("../../assets/images/profile.png")}
+                    />
+                    <Text className="text-white text-center">
+                      Nihas Latheef
+                    </Text>
+                  </View>
+                  <Image
+                    source={require("../../assets/images/silver.png")}
+                    className="w-full"
+                  />
+                </View>
+
+                <View className="w-4/12 h-auto flex flex-col">
+                  <View className="flex-1 items-center">
+                    <Image
+                      className="rounded-full w-20 h-20 mb-2  border-amber-300 border-2"
+                      source={require("../../assets/images/profile.png")}
+                    />
+                    <Text className="text-white mb-4 text-center">
+                      Manu Prasad
+                    </Text>
+                  </View>
+                  <Image
+                    source={require("../../assets/images/gold.png")}
+                    className="w-full"
+                  />
+                </View>
+
+                <View className="w-4/12 h-auto flex flex-col">
+                  <View className="flex-1 items-center">
+                    <Image
+                      className="rounded-full w-12 h-12 mb-2 mt-24"
+                      source={require("../../assets/images/profile.png")}
+                    />
+                    <Text className="text-white text-center ">
+                      Choice Joseph
+                    </Text>
+                  </View>
+                  <Image
+                    source={require("../../assets/images/bronze.png")}
+                    className="w-full"
+                  />
+                </View>
+              </View>
+
+              <View className="mt-8">
+                <View className="flex flex-row justify-between items-center">
+                  <ScrollView
+                    horizontal={true}
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingRight: 0,
+                      paddingVertical: 0,
+                    }}
+                  >
+                    <View className="rounded-2xl h-auto pb-6 mt-3 me-4 flex flex-row items-center justify-center">
+                      <View className="me-4 relative">
+                        <TouchableOpacity
+                          className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
+                          onPress={handleRedeemPress}
+                          activeOpacity={0.7}
+                        >
+                          <Text className="text-white font-bold text-sm px-3">
+                            Redeem
+                          </Text>
+                        </TouchableOpacity>
+                        <Image
+                          className="rounded-xl w-80 h-80"
+                          source={require("../../assets/images/ad1.jpg")}
+                        />
+                      </View>
+                      <View className="me-4 relative">
+                        <TouchableOpacity
+                          className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
+                          onPress={handleRedeemPress}
+                          activeOpacity={0.7}
+                        >
+                          <Text className="text-white font-bold text-sm px-3">
+                            Redeem
+                          </Text>
+                        </TouchableOpacity>
+                        <Image
+                          className="rounded-xl w-80 h-80"
+                          source={require("../../assets/images/ad3.jpg")}
+                        />
+                      </View>
+                      <View>
+                        <TouchableOpacity
+                          className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
+                          onPress={handleRedeemPress}
+                          activeOpacity={0.7}
+                        >
+                          <Text className="text-white font-bold text-sm px-3">
+                            Redeem
+                          </Text>
+                        </TouchableOpacity>
+                        <Image
+                          className="rounded-xl w-80 h-80"
+                          source={require("../../assets/images/ad2.png")}
+                        />
+                      </View>
+                    </View>
+                  </ScrollView>
+                </View>
+              </View>
+            </View>
+            <LogoutButton />
           </View>
-          <LogoutButton />
-          </View>
-        
-      </ScrollView>
-    </View>
+        </ScrollView>
+      </View>
+    </ApiErrorBoundary>
   );
 };
 

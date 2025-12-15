@@ -1,10 +1,12 @@
 import { Slot, useRouter, useSegments } from "expo-router";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { Provider } from "react-redux";
 import { ErrorBoundary } from "../components/common/ErrorBoundary";
 import SplashScreen from "../components/common/SplashScreen";
 import { AppProvider } from "../context/AppContext";
 import { ProfileProvider, useProfileContext } from "../context/ProfileContext";
+import { store } from "../store";
 import "./globals.css";
 
 // Component to handle authentication routing
@@ -64,14 +66,16 @@ const AuthRouter = () => {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <ErrorBoundary>
-        <AppProvider>
-          <ProfileProvider>
-            <AuthRouter />
-          </ProfileProvider>
-        </AppProvider>
-      </ErrorBoundary>
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <SafeAreaProvider>
+        <ErrorBoundary>
+          <AppProvider>
+            <ProfileProvider>
+              <AuthRouter />
+            </ProfileProvider>
+          </AppProvider>
+        </ErrorBoundary>
+      </SafeAreaProvider>
+    </Provider>
   );
 }

@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Alert,
   Image,
@@ -12,12 +12,13 @@ import {
   View,
 } from "react-native";
 import { useProfile } from "../context/hooks/useProfile";
-import { authAPI } from "../utils/api";
+import { useRegisterMutation } from "../store/slices/authApi";
 import { tokenManager } from "../utils/tokenManager";
 
 const CreateAccount = () => {
   const router = useRouter();
-  const { user, setLoading, setError, setUser, isLoading } = useProfile();
+  const { user, setLoading, setError, setUser } = useProfile();
+  const [register, { isLoading }] = useRegisterMutation();
   const [step, setStep] = useState(1); // 1: GYM Code, 2: Name & Username
   const [gymCode, setGymCode] = useState("");
   const [fullName, setFullName] = useState("");
@@ -49,16 +50,16 @@ const CreateAccount = () => {
       setLoading(true);
       setError(null);
 
-      // Register user
-      const response = await authAPI.register({
+      // Register user using RTK Query
+      const response = await register({
         mobileNumber: user.mobileNumber,
         username: username.trim(),
         fullName: fullName.trim(),
-        email:"",
-        plainPassword:"",
+        email: null,
+        plainPassword: null,
         gymId: gymCode.trim(),
         profileDataJson: null,
-      });
+      }).unwrap();
 
       // Get the access token from response
       const accessToken = response.token || response.accessToken;
@@ -147,10 +148,7 @@ const CreateAccount = () => {
         </TouchableOpacity>
 
         {/* Logo */}
-        <Image
-          className="mt-8"
-          source={require("../assets/images/logo.png")}
-        />
+        <Image className="mt-8" source={require("../assets/images/logo.png")} />
 
         {/* Step 1: GYM Code */}
         {step === 1 && (

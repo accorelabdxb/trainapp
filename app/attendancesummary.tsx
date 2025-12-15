@@ -1,68 +1,40 @@
+import Calendar from "@/components/common/Calender";
+import { useGetAttendanceSummaryQuery } from "@/store/slices/attendanceApi";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
-import {
-  FlatList,
-  Text,
-  TouchableOpacity,
-  View,
-  ScrollView,
-} from "react-native";
 import moment from "moment";
-import Calendar from "@/components/common/Calender";
-import { useEffect, useState } from "react";
-import { attendanceAPI } from "@/utils/api";
+import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 const attendancesummary = () => {
-  const [attendanceData, setAttendanceData] = useState<Record<string, boolean>>(
-    {}
-  );
-  const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
-
-  const handleGoBack = () => {
-    router.push("/dashboard");
-  };
-
-
-  const endDate = moment().endOf("month").format("YYYY-MM-DD"); 
+  const endDate = moment().endOf("month").format("YYYY-MM-DD");
   const startDate = moment()
     .subtract(2, "months")
     .startOf("month")
-    .format("YYYY-MM-DD"); // 2 months before
-  useEffect(() => {
-    const fetchAttendanceData = async () => {
-      try {
-        setIsLoading(true);
+    .format("YYYY-MM-DD");
 
-        const response = await attendanceAPI.getAttendanceSummary(
-          startDate,
-          endDate
-        );
+  const { data: response, isLoading } = useGetAttendanceSummaryQuery({
+    startDate,
+    endDate,
+  });
 
-        const attendanceMap: Record<string, boolean> = {};
+  const attendanceData: Record<string, boolean> = {};
 
-        if (response?.history && Array.isArray(response.history)) {
-          response.history.forEach(
-            (entry: { checkInTime: string; Checkinstatus: number }) => {
-              const dateStr = moment
-                .utc(entry.checkInTime)
-                .local()
-                .format("YYYY-MM-DD");
-              attendanceMap[dateStr] = entry.Checkinstatus === 1;
-            }
-          );
-        }
-
-        setAttendanceData(attendanceMap);
-      } catch (error) {
-        console.error("Error fetching attendance:", error);
-      } finally {
-        setIsLoading(false);
+  if (response?.history && Array.isArray(response.history)) {
+    response.history.forEach(
+      (entry: { checkInTime: string; Checkinstatus: number }) => {
+        const dateStr = moment
+          .utc(entry.checkInTime)
+          .local()
+          .format("YYYY-MM-DD");
+        attendanceData[dateStr] = entry.Checkinstatus === 1;
       }
-    };
+    );
+  }
 
-    fetchAttendanceData();
-  }, [startDate, endDate]);
+  const handleGoBack = () => {
+    router.push("/(tabs)/dashboard");
+  };
 
   return (
     <View className="flex-1 bg-black">

@@ -1,6 +1,8 @@
-import { useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
+import { useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -9,17 +11,13 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
-import { ChevronLeft } from "lucide-react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ActivityIndicator } from "react-native";
-import { communityAPI } from "@/utils/api";
 
 export default function ImageEditScreen() {
   const router = useRouter();
   const { uri, type } = useLocalSearchParams(); // get both params
   const [caption, setCaption] = useState("");
-  const [isUploading, setIsUploading] = useState(false);
+  const [createPost, { isLoading: isUploading }] = useCreatePostMutation();
 
   const handleShare = async () => {
     // 1. Validate that we have an image URI
@@ -34,12 +32,12 @@ export default function ImageEditScreen() {
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image`;
       const file = { uri, name: filename, type };
-      const response = await communityAPI.createPost(caption, file);
+      const response = await createPost({ content: caption, file }).unwrap();
       if (response.success) {
         Alert.alert("Success", "Your post has been shared!");
         router.push("/(tabs)/social");
       } else {
-        throw new Error(response.message || "Failed to share post.");
+        throw new Error("Failed to share post.");
       }
     } catch (error) {
       // 5. Handle any errors

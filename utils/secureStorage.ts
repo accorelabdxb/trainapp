@@ -12,6 +12,10 @@ export const secureStorage = {
   // Store access token securely
   async setAccessToken(token: string): Promise<void> {
     try {
+      // Ensure token is a valid string (not null, undefined, or empty)
+      if (!token || typeof token !== "string" || token.trim().length === 0) {
+        throw new Error("Invalid token: token must be a non-empty string");
+      }
       await SecureStore.setItemAsync(STORAGE_KEYS.ACCESS_TOKEN, token);
     } catch (error) {
       console.error("Error storing access token:", error);
@@ -56,6 +60,12 @@ export const secureStorage = {
   // Store refresh token securely
   async setRefreshToken(token: string): Promise<void> {
     try {
+      // Ensure token is a valid string (not null, undefined, or empty)
+      if (!token || typeof token !== "string" || token.trim().length === 0) {
+        throw new Error(
+          "Invalid refresh token: token must be a non-empty string"
+        );
+      }
       await SecureStore.setItemAsync(STORAGE_KEYS.REFRESH_TOKEN, token);
     } catch (error) {
       console.error("Error storing refresh token:", error);

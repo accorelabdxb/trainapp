@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
   Image,
@@ -14,12 +14,13 @@ import {
   View,
 } from "react-native";
 import { useProfile } from "../context/hooks/useProfile";
-import { authAPI } from "../utils/api";
+import { useSendOtpMutation } from "../store/slices/authApi";
 import { tokenManager } from "../utils/tokenManager";
 
 export default function Home() {
   const router = useRouter();
-  const { setLoading, setError, setUser, setOtpSent, isLoading } = useProfile();
+  const { setLoading, setError, setUser, setOtpSent } = useProfile();
+  const [sendOtp, { isLoading }] = useSendOtpMutation();
   const [phoneNumber, setPhoneNumber] = useState("");
   const scrollViewRef = useRef<ScrollView>(null);
 
@@ -78,8 +79,12 @@ export default function Home() {
       setLoading(true);
       setError(null);
 
-      // Send OTP
-      const response = await authAPI.sendOtp(phoneNumber);
+      // Send OTP using RTK Query
+      const response = await sendOtp({
+        userId: null,
+        phoneNumber: phoneNumber,
+      }).unwrap();
+
       console.log("res::", response);
       // Store phone number in profile context
       setUser({
@@ -110,13 +115,12 @@ export default function Home() {
         return;
       }
 
-      setError(
-        error.response?.data?.message || "Failed to send OTP. Please try again."
-      );
-      Alert.alert(
-        "Error",
-        error.response?.data?.message || "Failed to send OTP. Please try again."
-      );
+      const errorMessage =
+        error?.data?.message ||
+        error?.message ||
+        "Failed to send OTP. Please try again.";
+      setError(errorMessage);
+      Alert.alert("Error", errorMessage);
     } finally {
       setLoading(false);
     }
@@ -124,48 +128,50 @@ export default function Home() {
 
   return (
     <KeyboardAvoidingView
-      className='flex-1 bg-black'
+      className="flex-1 bg-black"
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
-      enabled={Platform.OS === "ios"}>
+      enabled={Platform.OS === "ios"}
+    >
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <ScrollView
           ref={scrollViewRef}
-          className='flex-1 bg-black'
+          className="flex-1 bg-black"
           contentContainerStyle={{
             flexGrow: 1,
             paddingBottom: Platform.OS === "android" ? 320 : 0,
           }}
-          keyboardShouldPersistTaps='handled'
+          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
-          bounces={false}>
-          <View className='flex-1 bg-black p-12'>
+          bounces={false}
+        >
+          <View className="flex-1 bg-black p-12">
             <Image
-              className='mt-40'
+              className="mt-40"
               source={require("../assets/images/logo.png")}
             />
-            <View className='mt-20'>
-              <Text className='text-white font-bold text-4xl mt-10'>
+            <View className="mt-20">
+              <Text className="text-white font-bold text-4xl mt-10">
                 Sign in to your Account
               </Text>
-              <Text className='text-white/50'>
+              <Text className="text-white/50">
                 Enter your Mobile number to continue
               </Text>
             </View>
-            <View className='mt-10'>
-              <Text className='text-white'>Enter Mobile number</Text>
+            <View className="mt-10">
+              <Text className="text-white">Enter Mobile number</Text>
               <TextInput
-                className='mt-2 bg-input h-14 rounded-xl px-5 text-white text-2xl'
-                keyboardType='phone-pad'
-                returnKeyType='done'
+                className="mt-2 bg-input h-14 rounded-xl px-5 text-white text-2xl"
+                keyboardType="phone-pad"
+                returnKeyType="done"
                 value={phoneNumber}
                 onChangeText={setPhoneNumber}
                 onFocus={handleInputFocus}
-                placeholder='+1 (555) 123-4567'
-                placeholderTextColor='#666'
+                placeholder="+1 (555) 123-4567"
+                placeholderTextColor="#666"
                 editable={!isLoading}
                 maxLength={15}
-                autoComplete='tel'
+                autoComplete="tel"
               />
             </View>
 
@@ -177,8 +183,9 @@ export default function Home() {
               }`}
               onPress={handleLogin}
               activeOpacity={0.8}
-              disabled={!phoneNumber || phoneNumber.length < 10 || isLoading}>
-              <Text className='text-black font-normal text-xl'>
+              disabled={!phoneNumber || phoneNumber.length < 10 || isLoading}
+            >
+              <Text className="text-black font-normal text-xl">
                 {isLoading ? "Sending OTP..." : "Log in"}
               </Text>
             </TouchableOpacity>
