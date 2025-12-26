@@ -1,13 +1,13 @@
 import axios from "axios";
 import { secureStorage } from "./secureStorage";
 import { TokenExpiredError, tokenManager } from "./tokenManager";
-import { Platform } from "react-native";
 
-const BASE_URL = "http://34.59.166.225:8001";
-const ATT_BASE_URL = "http://34.59.166.225:8002";
-const COMMUNITY_BASE_URL = "http://34.59.166.225:8003";
-const CHALLENGES_BASE_URL = "http://34.59.166.225:8004";
-export const BASE_FILE_URL = "http://34.59.166.225/uploads/";
+const BASE_URL = "http://64.227.138.196:8001";
+const ATT_BASE_URL = "http://136.112.252.186:8002"; 
+const COMMUNITY_BASE_URL = "http://136.112.252.186:8003";
+const CHALLENGES_BASE_URL = "http://136.112.252.186:8004";
+const GYM_BASE_URL = "http://136.112.252.186:8005";
+export const BASE_FILE_URL = "http://136.112.252.186/uploads/";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -30,6 +30,12 @@ const commapi = axios.create({
 
 const challengeapi = axios.create({
   baseURL: CHALLENGES_BASE_URL,
+});
+const gymapi = axios.create({
+  baseURL: GYM_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Request interceptor to add token to headers (for AUTH API)
@@ -161,6 +167,34 @@ challengeapi.interceptors.request.use(
   }
 );
 
+gymapi.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await secureStorage.getAccessToken();
+      if (token) {
+        if (!tokenManager.isValidToken(token)) {
+          console.warn("Invalid token format detected");
+        }
+        if (tokenManager.isTokenExpired(token)) {
+          console.warn("Token is expired, clearing storage");
+          await secureStorage.clearAll();
+          throw new TokenExpiredError();
+        }
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error("Error adding token to gym request:", error);
+      if (error instanceof TokenExpiredError) {
+        throw error;
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 // Response interceptor to handle token expiration (for AUTH API)
 api.interceptors.response.use(
   (response) => {
@@ -258,6 +292,24 @@ challengeapi.interceptors.response.use(
   }
 );
 
+gymapi.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      try {
+        await tokenManager.handleTokenExpiration();
+      } catch (refreshError) {
+        throw new TokenExpiredError();
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 // API endpoints
 export const authAPI = {
   // Send OTP
@@ -298,6 +350,20 @@ export const authAPI = {
   }) => {
     try {
       const response = await api.post("/api/v1/Accounts/register", userData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+};
+
+export const gymAPI = {
+  verifyGymCode: async (gymCode: string) => {
+    try {
+      // The token will be added by the 'gymapi' interceptor
+      const response = await gymapi.post("/api/v1/Gym/verify", {
+        gymCode: gymCode,
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -449,7 +515,7 @@ export const challengesAPI = {
       throw error;
     }
   },
-   getAllChallenges: async () => {
+  getAllChallenges: async () => {
     try {
       // This endpoint gets all challenges as seen in your API response
       const response = await challengeapi.get("/api/v1/Challenges");
