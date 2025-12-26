@@ -1,3 +1,4 @@
+import { useCreatePostMutation } from "@/store/slices/communityApi";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
@@ -25,7 +26,7 @@ export default function ImageEditScreen() {
       Alert.alert("Error", "No image was selected.");
       return;
     }
-    setIsUploading(true);
+    // setIsUploading(true); // Removed: RTK Query handles this
     try {
       // The API expects an object with uri, name, and type.
       const filename = uri.split("/").pop() || `photo_${Date.now()}.jpg`;
@@ -43,8 +44,6 @@ export default function ImageEditScreen() {
       // 5. Handle any errors
       console.error("Failed to share post:", error);
       Alert.alert("Error", "Something went wrong. Please try again.");
-    } finally {
-      setIsUploading(false); // Stop loading, whether it succeeded or failed
     }
   };
 

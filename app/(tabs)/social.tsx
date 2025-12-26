@@ -108,6 +108,9 @@ const Social = () => {
 
   const getFileUrl = (fileFullpath: string) => {
     if (!fileFullpath) return "";
+    if (fileFullpath.startsWith("http") || fileFullpath.startsWith("file:")) {
+      return fileFullpath;
+    }
     return (
       BASE_FILE_URL +
       fileFullpath

@@ -1,10 +1,14 @@
 import OctagonAlertIcon from "@/lib/icons/OctaganAlert";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { Calendar, ChevronLeft } from "lucide-react-native";
-import React, { useEffect, useState } from "react";
+import { useState } from "react";
 import RNModal from "react-native-modal";
 
-import { BASE_FILE_URL, challengesAPI } from "@/utils/api";
+import {
+  useGetChallengeDetailsQuery,
+  useJoinChallengeMutation
+} from "@/store/slices/challengesApi";
+import { BASE_FILE_URL } from "@/utils/api";
 import {
   ActivityIndicator,
   Alert,
@@ -54,8 +58,17 @@ interface ChallengeDetail {
 
 const WeightLossChallenge = () => {
   const { id } = useLocalSearchParams();
-  const [details, setDetails] = useState<ChallengeDetail | null>(null);
-  const [loading, setLoading] = useState(true);
+  const challengeId = typeof id === 'string' ? id : id?.[0];
+
+  const {
+    data: details,
+    isLoading: isDetailsLoading,
+    error
+  } = useGetChallengeDetailsQuery(challengeId as string, {
+    skip: !challengeId
+  });
+
+  const [joinChallenge, { isLoading: isJoining }] = useJoinChallengeMutation();
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
 
@@ -76,25 +89,18 @@ const WeightLossChallenge = () => {
         },
         {
           text: "Join",
-
           onPress: async () => {
-            if (!id) return;
+            if (!challengeId) return;
             try {
-              setLoading(true);
-              const response = await challengesAPI.joinChallenge(id as string);
+              const response = await joinChallenge(challengeId).unwrap();
 
               if (response.success) {
-                // 1. Success alert is removed.
-                // 2. Navigate directly to the challenges list.
                 router.push("/challenges");
               } else {
-                // Error handling remains the same.
                 Alert.alert("Error", response.message || "Failed to join.");
               }
             } catch (error) {
               Alert.alert("Error", "An error occurred. Please try again.");
-            } finally {
-              setLoading(false);
             }
           },
         },
@@ -102,27 +108,8 @@ const WeightLossChallenge = () => {
     );
   };
 
-  useEffect(() => {
-    if (id) {
-      const fetchDetails = async () => {
-        try {
-          setLoading(true);
-          const data = await challengesAPI.getChallengeDetails(id as string);
-          setDetails(data);
-          console.log("object", data);
-        } catch (error) {
-          console.error("Failed to fetch details:", error);
-          Alert.alert("Error", "Could not load challenge details.");
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchDetails();
-    }
-  }, [id]);
-
   // Handle loading and error states
-  if (loading) {
+  if (isDetailsLoading) {
     return (
       <View className='flex-1 bg-black justify-center items-center'>
         <ActivityIndicator
@@ -154,7 +141,7 @@ const WeightLossChallenge = () => {
   const dateRange = `${formatDate(startDate)} to ${formatDate(
     new Date(details.endDate)
   )}`;
-  const spotsOpen = details.maxParticipants - details.currentParticipants;
+  const spotsOpen = (details.maxParticipants || 0) - (details.currentParticipants || 0);
 
   return (
     <View className='flex-1 bg-black'>
@@ -320,7 +307,7 @@ const WeightLossChallenge = () => {
             {
               // 1. Parse the rules string into an array of individual rules
               // This regex finds all text enclosed in "quotes" and removes the quotes.
-              details.rules
+              details.rules ? details.rules
                 .match(/"([^"]*)"/g)
                 ?.map((rule) => rule.replace(/"/g, ""))
                 .map((rule, i) => (
@@ -330,7 +317,7 @@ const WeightLossChallenge = () => {
                     className='text-[#9f9f9f] font-medium text-base leading-[26px] mb-3'>
                     {i + 1}. {rule}
                   </Text>
-                ))
+                )) : null
             }
           </View>
         </View>
@@ -383,11 +370,10 @@ const WeightLossChallenge = () => {
         activeOpacity={0.8}
         onPress={handleJoinChallenge}
         disabled={details.isJoined || spotsOpen <= 0}
-        className={`absolute left-[14px] right-[14px] bottom-[28px] h-[57px] rounded-[51px] flex flex-row items-center shadow-lg px-5 ${
-          details.isJoined || spotsOpen <= 0
+        className={`absolute left-[14px] right-[14px] bottom-[28px] h-[57px] rounded-[51px] flex flex-row items-center shadow-lg px-5 ${details.isJoined || spotsOpen <= 0
             ? "bg-gray-600 border-gray-600 justify-center"
             : "bg-white border-white justify-start"
-        }`}>
+          }`}>
         {!details.isJoined && spotsOpen > 0 && (
           <Text className='font-medium text-[13px] text-[#494949] text-left capitalize'>
             {spotsOpen} Spot{spotsOpen !== 1 ? "s" : ""} Open
@@ -395,9 +381,8 @@ const WeightLossChallenge = () => {
         )}
 
         <Text
-          className={`absolute left-0 right-0 text-center font-medium text-lg tracking-[0.22px] ${
-            details.isJoined || spotsOpen <= 0 ? "text-white" : "text-black"
-          }`}>
+          className={`absolute left-0 right-0 text-center font-medium text-lg tracking-[0.22px] ${details.isJoined || spotsOpen <= 0 ? "text-white" : "text-black"
+            }`}>
           {details.isJoined ? "Joined" : spotsOpen > 0 ? "Join" : "Full"}
         </Text>
       </TouchableOpacity>

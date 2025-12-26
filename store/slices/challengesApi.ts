@@ -1,14 +1,29 @@
 import { api, tagTypes } from "../api";
 import { CHALLENGES_BASE_URL } from "../baseQuery";
 
+export interface RewardPartner {
+  name: string;
+  address: string;
+  contact: string;
+  logo: string;
+}
+
 export interface Challenge {
   id: number;
   challengeId?: number;
   title: string;
+  description?: string;
   startDate: string;
   endDate: string;
   attachmentUrl: string | null;
+  prizeDetails?: string;
+  rules?: string;
+  rewardPartnerLogo?: string | null;
+  rewardPartner?: RewardPartner;
   isUserParticipating?: boolean;
+  isJoined?: boolean;
+  maxParticipants?: number;
+  currentParticipants?: number;
 }
 
 export interface JoinChallengeResponse {
@@ -18,6 +33,7 @@ export interface JoinChallengeResponse {
 
 // Challenges API slice
 export const challengesApi = api.injectEndpoints({
+  overrideExisting: true,
   endpoints: (builder) => ({
     getUpcomingChallenges: builder.query<Challenge[], void>({
       query: () => ({
@@ -77,60 +93,6 @@ export const challengesApi = api.injectEndpoints({
         baseUrl: CHALLENGES_BASE_URL,
       }),
       // Optimistic update
-      async onQueryStarted(challengeId, { dispatch, queryFulfilled }) {
-        // Optimistically update all challenge lists
-        const patchResults: any[] = [];
-
-        // Update getAllChallenges
-        const allChallengesPatch = dispatch(
-          api.util.updateQueryData("getAllChallenges", undefined, (draft) => {
-            const challenge = draft.find((c) => c.id === Number(challengeId));
-            if (challenge) {
-              challenge.isUserParticipating = true;
-            }
-          })
-        );
-        patchResults.push(allChallengesPatch);
-
-        // Update getActiveChallenges
-        const activeChallengesPatch = dispatch(
-          api.util.updateQueryData(
-            "getActiveChallenges",
-            undefined,
-            (draft) => {
-              const challenge = draft.find((c) => c.id === Number(challengeId));
-              if (challenge) {
-                challenge.isUserParticipating = true;
-              }
-            }
-          )
-        );
-        patchResults.push(activeChallengesPatch);
-
-        // Update getUpcomingChallenges
-        const upcomingChallengesPatch = dispatch(
-          api.util.updateQueryData(
-            "getUpcomingChallenges",
-            undefined,
-            (draft) => {
-              const challenge = draft.find((c) => c.id === Number(challengeId));
-              if (challenge) {
-                challenge.isUserParticipating = true;
-              }
-            }
-          )
-        );
-        patchResults.push(upcomingChallengesPatch);
-
-        try {
-          await queryFulfilled;
-          // Invalidate to refetch fresh data
-          dispatch(api.util.invalidateTags([tagTypes.Challenges]));
-        } catch {
-          // Rollback on error
-          patchResults.forEach((patch) => patch.undo());
-        }
-      },
       invalidatesTags: [tagTypes.Challenges, tagTypes.Dashboard],
     }),
   }),

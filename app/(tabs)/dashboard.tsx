@@ -1,4 +1,4 @@
-import { Celebration, FadeInView, ScalePress } from "@/components/AnimatedComponents";
+import { Celebration, FadeInView } from "@/components/AnimatedComponents";
 import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
 import { LogoutButton } from "@/components/common/LogoutButton";
 import { useProfile } from "@/context/hooks/useProfile";
@@ -9,6 +9,7 @@ import {
 } from "@/store/slices/attendanceApi";
 import { useGetAllChallengesQuery } from "@/store/slices/challengesApi";
 import { BASE_FILE_URL } from "@/utils/api";
+import * as HapticFeedback from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Flame } from "lucide-react-native";
 import moment from "moment";
@@ -23,6 +24,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { GameButton, GameCard, SectionHeader } from "../../components/common/GamifiedUI";
 import { StatCard } from "../../components/common/StatCard";
 import { PointsCard } from "../../components/dashboard/PointsCard";
 import { UserGreeting } from "../../components/dashboard/UserGreeting";
@@ -85,7 +87,7 @@ const Dashboard = () => {
   };
 
   const handlePointsPress = () => {
-    HapticFeedback.light(); // Add haptic feedback
+    HapticFeedback.impactAsync(HapticFeedback.ImpactFeedbackStyle.Light); // Add haptic feedback
     // Trigger celebration
     setShowCelebration(true);
     // You might also want to navigate or show a modal here
@@ -217,31 +219,42 @@ const Dashboard = () => {
           }
         >
           <View className="pt-8">
-            <FadeInView delay={100} className="flex flex-row items-center justify-between bg-secbg p-4 px-4 mx-2 rounded-2xl">
-              <View>
-                <UserGreeting />
-                <View className="flex-row items-center mt-1">
-                  <Flame size={16} color="#FF5722" fill="#FF5722" />
-                  <Text className="text-white/70 text-xs ml-1">3 Day Streak</Text>
+            <View className="pt-8 mb-4">
+              <GameCard
+                colors={['#1a1a1a', '#000000']}
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}
+                depth={6}
+              >
+                <View>
+                  <UserGreeting />
+                  <View className="flex-row items-center mt-2 bg-neutral-900/50 self-start px-2 py-1 rounded-full border border-neutral-800">
+                    <Flame size={14} color="#FFeb3b" fill="#FFeb3b" />
+                    <Text className="text-white/90 text-xs ml-1 font-bold">3 Day Streak</Text>
+                  </View>
                 </View>
-              </View>
-              <PointsCard
-                onPress={handlePointsPress}
-                coinsEarned={coinsEarned}
-              />
-            </FadeInView>
-
-            <FadeInView delay={200} className="bg-secbg p-4 px-4 mt-8 mx-2 rounded-2xl">
-              <View className="flex flex-row items-center justify-between mb-2">
-                <Text className="text-white text-lg">
-                  Consistency is Your Superpower! 💪
-                </Text>
-                <CircleChevronRight
-                  onPress={handleAttendanceSummaryPress}
-                  className="text-white/70"
-                  size={18}
-                  strokeWidth={1.5}
+                <PointsCard
+                  onPress={handlePointsPress}
+                  coinsEarned={coinsEarned}
                 />
+              </GameCard>
+            </View>
+
+            <GameCard
+              colors={['#252525', '#121212']}
+              style={{ marginTop: 16, marginHorizontal: 8, padding: 20 }}
+              depth={6}
+            >
+              <View className="flex flex-row items-center justify-between mb-4">
+                <Text className="text-white text-lg font-bold">
+                  Consistency is Power 💪
+                </Text>
+                <TouchableOpacity onPress={handleAttendanceSummaryPress} activeOpacity={0.7} className="bg-neutral-800 p-2 rounded-full">
+                  <CircleChevronRight
+                    className="text-white/90"
+                    size={20}
+                    strokeWidth={2}
+                  />
+                </TouchableOpacity>
               </View>
 
               {/* Loading state for attendance dates */}
@@ -293,12 +306,10 @@ const Dashboard = () => {
                   })}
                 </View>
               )}
-            </FadeInView>
+            </GameCard>
 
             <View className="mt-8 px-4">
-              <Text className="text-white font-bold text-xl">
-                You're in the gym
-              </Text>
+              <SectionHeader title="You're in the gym" />
               <View className="flex flex-row justify-between items-center">
                 <ScrollView
                   horizontal={true}
@@ -326,49 +337,51 @@ const Dashboard = () => {
 
             <View className="mt-8 px-4">
               <View className="flex flex-row justify-between items-center">
-                <ScalePress
-                  className="bg-secbg rounded-2xl me-4 w-6/12 h-60 overflow-hidden"
+                <GameCard
+                  colors={['#1a1a1a', '#000000']}
+                  style={{ width: '48%', height: 240, borderRadius: 16, padding: 0 }}
                   onPress={handleImageButtonPress}
+                  depth={8}
                 >
-                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-black text-xs">Nihas Latheef</Text>
+                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10 shadow-sm">
+                    <Text className="text-black text-xs font-bold">Nihas Latheef</Text>
                   </View>
-                  <View className="rounded-2xl flex items-center justify-center">
-                    <Image
-                      className="w-full h-full"
-                      source={require("../../assets/images/photooftheday.jpg")}
-                    />
-                    <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                      <Text className="text-white font-bold text-xs">
-                        Body Zone Star of the week
-                      </Text>
-                    </View>
+                  <Image
+                    className="w-full h-full rounded-2xl opacity-90"
+                    source={require("../../assets/images/photooftheday.jpg")}
+                    resizeMode="cover"
+                  />
+                  <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10 border border-white/20">
+                    <Text className="text-white font-bold text-xs">
+                      Body Zone Star of the week
+                    </Text>
                   </View>
-                </ScalePress>
-                <ScalePress
-                  className="bg-secbg rounded-2xl w-6/12 h-60 overflow-hidden"
+                </GameCard>
+                <GameCard
+                  colors={['#1a1a1a', '#000000']}
+                  style={{ width: '48%', height: 240, borderRadius: 16, padding: 0 }}
                   onPress={handleImageButtonPress}
+                  depth={8}
                 >
-                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                    <Text className="text-black text-xs">Manuprasad</Text>
+                  <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10 shadow-sm">
+                    <Text className="text-black text-xs font-bold">Manuprasad</Text>
                   </View>
-                  <View className="rounded-2xl flex items-center justify-center">
-                    <Image
-                      className="w-full h-full"
-                      source={require("../../assets/images/starof.jpg")}
-                    />
-                    <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                      <Text className="text-white font-bold text-xs">
-                        Photo of the day
-                      </Text>
-                    </View>
+                  <Image
+                    className="w-full h-full rounded-2xl opacity-90"
+                    source={require("../../assets/images/starof.jpg")}
+                    resizeMode="cover"
+                  />
+                  <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10 border border-white/20">
+                    <Text className="text-white font-bold text-xs">
+                      Photo of the day
+                    </Text>
                   </View>
-                </ScalePress>
+                </GameCard>
               </View>
             </View>
 
             <View className="mt-8 px-4">
-              <Text className="text-white font-bold text-xl">Challenges</Text>
+              <SectionHeader title="Challenges" />
 
               {/* Show a loading spinner while fetching data */}
               {isLoadingChallenges ? (
@@ -388,44 +401,45 @@ const Dashboard = () => {
                   >
                     {/* Map over the first 4 challenges from the state */}
                     {challenges.slice(0, 4).map((challenge) => (
-                      <ScalePress
+                      <GameCard
                         key={challenge.id}
-                        className="bg-secbg rounded-2xl w-52 pb-6 mt-3 me-4 flex items-center relative"
-                        onPress={() => handleChallengePress(challenge.id)} // Use navigation handler
+                        colors={['#1F1F1F', '#121212']}
+                        style={{ width: 220, paddingBottom: 24, marginRight: 16, marginTop: 12, borderRadius: 16, overflow: 'hidden', padding: 0 }}
+                        onPress={() => handleChallengePress(challenge.id)}
+                        depth={8}
                       >
-                        <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
-                          {/* Use date formatting function */}
-                          <Text className="text-black text-xs">
+                        <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10 shadow-sm">
+                          <Text className="text-black text-xs font-bold">
                             {formatEndDate(challenge.endDate)}
                           </Text>
                         </View>
 
                         <Image
-                          className="w-full h-40 rounded-t-2xl"
-                          // Use dynamic image with a fallback
+                          className="w-full h-40 rounded-t-2xl opacity-90"
                           source={
                             challenge.attachmentUrl
                               ? {
                                 uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
                               }
-                              : require("../../assets/images/challenge1.png") // Your fallback image
+                              : require("../../assets/images/challenge1.png")
                           }
+                          resizeMode="cover"
                         />
 
-                        {/* Use dynamic title */}
-                        <Text className="text-white leading-5 py-4 px-4 mb-4 self-start font-semibold">
+                        <Text className="text-white text-lg leading-6 py-4 px-4 font-bold">
                           {challenge.title}
                         </Text>
 
-                        <View className="absolute bottom-4 left-4 bg-white rounded-full w-auto px-3 py-1">
-                          <View className="flex flex-row items-center">
-                            {/* Use dynamic button text based on participation */}
-                            <Text className="text-black text-sm px-3">
-                              {challenge.isUserParticipating ? "View" : "Join"}
-                            </Text>
-                          </View>
+                        <View className="px-4 pb-0">
+                          <GameButton
+                            onPress={() => handleChallengePress(challenge.id)}
+                            title={challenge.isUserParticipating ? "View Status" : "Join Now"}
+                            variant={challenge.isUserParticipating ? "secondary" : "primary"}
+                            style={{ paddingVertical: 10, borderRadius: 12 }}
+                            textStyle={{ fontSize: 13 }}
+                          />
                         </View>
-                      </ScalePress>
+                      </GameCard>
                     ))}
                   </ScrollView>
                 </View>
@@ -494,57 +508,39 @@ const Dashboard = () => {
                     contentContainerStyle={{
                       flexDirection: "row",
                       alignItems: "center",
-                      paddingRight: 0,
-                      paddingVertical: 0,
+                      paddingRight: 16,
+                      paddingVertical: 10,
                     }}
                   >
-                    <View className="rounded-2xl h-auto pb-6 mt-3 me-4 flex flex-row items-center justify-center">
-                      <View className="me-4 relative">
-                        <TouchableOpacity
-                          className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                          onPress={handleRedeemPress}
-                          activeOpacity={0.7}
-                        >
-                          <Text className="text-white font-bold text-sm px-3">
-                            Redeem
-                          </Text>
-                        </TouchableOpacity>
+                    {[
+                      require("../../assets/images/ad1.jpg"),
+                      require("../../assets/images/ad3.jpg"),
+                      require("../../assets/images/ad2.png")
+                    ].map((imgSource, idx) => (
+                      <GameCard
+                        key={idx}
+                        colors={['#000', '#111']}
+                        style={{ marginRight: 16, borderRadius: 24, padding: 0 }}
+                        depth={10}
+                        onPress={() => { }} // dummy
+                        disabled={true}
+                      >
                         <Image
-                          className="rounded-xl w-80 h-80"
-                          source={require("../../assets/images/ad1.jpg")}
+                          style={{ width: 300, height: 300, borderRadius: 24, opacity: 0.9 }}
+                          source={imgSource}
+                          resizeMode="cover"
                         />
-                      </View>
-                      <View className="me-4 relative">
-                        <TouchableOpacity
-                          className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                          onPress={handleRedeemPress}
-                          activeOpacity={0.7}
-                        >
-                          <Text className="text-white font-bold text-sm px-3">
-                            Redeem
-                          </Text>
-                        </TouchableOpacity>
-                        <Image
-                          className="rounded-xl w-80 h-80"
-                          source={require("../../assets/images/ad3.jpg")}
-                        />
-                      </View>
-                      <View>
-                        <TouchableOpacity
-                          className="flex flex-row items-center absolute z-10 bg-black/80 rounded-full p-2 px-4 bottom-4 right-4"
-                          onPress={handleRedeemPress}
-                          activeOpacity={0.7}
-                        >
-                          <Text className="text-white font-bold text-sm px-3">
-                            Redeem
-                          </Text>
-                        </TouchableOpacity>
-                        <Image
-                          className="rounded-xl w-80 h-80"
-                          source={require("../../assets/images/ad2.png")}
-                        />
-                      </View>
-                    </View>
+                        <View className="absolute bottom-6 right-6 z-20">
+                          <GameButton
+                            title="Redeem"
+                            onPress={handleRedeemPress}
+                            variant="accent"
+                            style={{ borderRadius: 30, paddingVertical: 10, paddingHorizontal: 20 }}
+                            textStyle={{ color: 'black', fontSize: 13 }}
+                          />
+                        </View>
+                      </GameCard>
+                    ))}
                   </ScrollView>
                 </View>
               </View>
