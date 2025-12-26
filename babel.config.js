@@ -7,14 +7,7 @@ module.exports = function (api) {
         ],
         plugins: [
             "react-native-reanimated/plugin",
-            [
-                "module-resolver",
-                {
-                    alias: {
-                        "react-native-worklets/plugin": "react-native-reanimated/plugin",
-                    },
-                },
-            ],
+
         ],
     };
 };
