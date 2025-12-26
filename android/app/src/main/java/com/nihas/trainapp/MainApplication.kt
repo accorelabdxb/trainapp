@@ -1,4 +1,4 @@
-package com.trainapp
+package com.nihas.trainapp
 
 import android.app.Application
 import android.content.res.Configuration
