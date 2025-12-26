@@ -1,13 +1,12 @@
 import axios from "axios";
 import { secureStorage } from "./secureStorage";
 import { TokenExpiredError, tokenManager } from "./tokenManager";
-import { Platform } from "react-native";
 
-const BASE_URL = "http://34.59.166.225:8001";
-const ATT_BASE_URL = "http://34.59.166.225:8002";
-const COMMUNITY_BASE_URL = "http://34.59.166.225:8003";
-const CHALLENGES_BASE_URL = "http://34.59.166.225:8004";
-export const BASE_FILE_URL = "http://34.59.166.225/uploads/";
+const BASE_URL = "http://64.227.138.196:8001";
+const ATT_BASE_URL = "http://64.227.138.196:8002";
+const COMMUNITY_BASE_URL = "http://64.227.138.196:8003";
+const CHALLENGES_BASE_URL = "http://64.227.138.196:8004";
+export const BASE_FILE_URL = "http://64.227.138.196/uploads/";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -449,7 +448,7 @@ export const challengesAPI = {
       throw error;
     }
   },
-   getAllChallenges: async () => {
+  getAllChallenges: async () => {
     try {
       // This endpoint gets all challenges as seen in your API response
       const response = await challengeapi.get("/api/v1/Challenges");

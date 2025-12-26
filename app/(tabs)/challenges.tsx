@@ -233,9 +233,9 @@ const Challenges = () => {
                   paddingVertical: 0,
                 }}
               >
-                {myChallenges.map((challenge) => (
+                {myChallenges.map((challenge, index) => (
                   <TouchableOpacity
-                    key={challenge.id}
+                    key={`${challenge.id}-${index}`}
                     onPress={() => {
                       console.log("Clicked My Challenge ID:", challenge.id); // DEBUG LOG
                       handleMyChallengesPress(
@@ -255,8 +255,8 @@ const Challenges = () => {
                         source={
                           challenge.attachmentUrl
                             ? {
-                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
-                              }
+                              uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                            }
                             : require("../../assets/images/challenge1.png")
                         }
                       />
@@ -316,9 +316,9 @@ const Challenges = () => {
                   paddingVertical: 0,
                 }}
               >
-                {activeChallenges.map((challenge) => (
+                {activeChallenges.map((challenge, index) => (
                   <TouchableOpacity
-                    key={challenge.id}
+                    key={`${challenge.id}-${index}`}
                     onPress={() => handleCardPress(challenge.id)}
                     activeOpacity={0.9}
                   >
@@ -333,8 +333,8 @@ const Challenges = () => {
                         source={
                           challenge.attachmentUrl
                             ? {
-                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
-                              }
+                              uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                            }
                             : require("../../assets/images/challenge1.png")
                         }
                       />
@@ -345,8 +345,8 @@ const Challenges = () => {
                         <View className="mt-4 bg-white rounded-full w-20 px-3 py-1">
                           <View
                             className="flex flex-row items-center"
-                            // onPress={() => handleJoinPress(challenge.id)}
-                            // activeOpacity={0.7}
+                          // onPress={() => handleJoinPress(challenge.id)}
+                          // activeOpacity={0.7}
                           >
                             <Text className="text-black text-sm px-3">
                               Join
@@ -375,9 +375,9 @@ const Challenges = () => {
                   paddingVertical: 0,
                 }}
               >
-                {upcomingChallenges.map((challenge) => (
+                {upcomingChallenges.map((challenge, index) => (
                   <TouchableOpacity
-                    key={challenge.id}
+                    key={`${challenge.id}-${index}`}
                     onPress={() => handleCardPress(challenge.id)}
                     activeOpacity={0.9}
                   >
@@ -392,8 +392,8 @@ const Challenges = () => {
                         source={
                           challenge.attachmentUrl
                             ? {
-                                uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
-                              }
+                              uri: `${BASE_FILE_URL}${challenge.attachmentUrl}`,
+                            }
                             : require("../../assets/images/challenge1.png")
                         }
                       />

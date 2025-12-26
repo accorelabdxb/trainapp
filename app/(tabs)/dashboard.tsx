@@ -181,7 +181,7 @@ const Dashboard = () => {
 
   return (
     <ApiErrorBoundary>
-      <View className="flex-1 bg-secbg">
+      <View className="flex-1 bg-black">
         {/* Fixed Header */}
         <SafeAreaView
           className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800"
@@ -347,7 +347,7 @@ const Dashboard = () => {
                     <Text className="text-black text-xs font-bold">Nihas Latheef</Text>
                   </View>
                   <Image
-                    className="w-full h-full rounded-2xl opacity-90"
+                    className="w-80 h-full rounded-2xl opacity-90"
                     source={require("../../assets/images/photooftheday.jpg")}
                     resizeMode="cover"
                   />
@@ -368,7 +368,7 @@ const Dashboard = () => {
                   </View>
                   <Image
                     className="w-full h-full rounded-2xl opacity-90"
-                    source={require("../../assets/images/starof.jpg")}
+                    source={require("../../assets/images/photooftheday.jpg")}
                     resizeMode="cover"
                   />
                   <View className="absolute bottom-2 bg-black/80 rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10 border border-white/20">

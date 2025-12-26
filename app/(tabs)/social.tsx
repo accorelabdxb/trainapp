@@ -248,6 +248,8 @@ const Social = () => {
   };
 
   const handleSelectPost = (post: Post) => {
+    console.log(post, '_______');
+
     setShowVideoControls(false);
     // Use the post data we already have from RTK Query cache
     setSelectedPost(post);
@@ -289,6 +291,8 @@ const Social = () => {
     });
     return { columnLeft: left, columnRight: right };
   }, [posts]);
+  console.log(posts);
+
 
   const reactionEmojiMap = {
     heart: "❤️",
