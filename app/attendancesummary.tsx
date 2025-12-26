@@ -1,9 +1,10 @@
+import { FadeInView, ScalePress } from "@/components/AnimatedComponents";
 import Calendar from "@/components/common/Calender";
 import { useGetAttendanceSummaryQuery } from "@/store/slices/attendanceApi";
 import { useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import moment from "moment";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 const attendancesummary = () => {
   const router = useRouter();
@@ -39,13 +40,12 @@ const attendancesummary = () => {
   return (
     <View className="flex-1 bg-black">
       <View className="pt-[60px] pb-[14px] px-4 flex flex-row items-center justify-between">
-        <TouchableOpacity
+        <ScalePress
           onPress={handleGoBack}
           className="w-11 h-11 bg-white rounded-full border-2 border-black flex justify-center items-center"
-          activeOpacity={0.7}
         >
           <ChevronLeft size={24} color="#000" />
-        </TouchableOpacity>
+        </ScalePress>
 
         <Text
           className="text-white font-bold text-lg leading-6 capitalize text-center flex-1"
@@ -61,12 +61,14 @@ const attendancesummary = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 20, paddingBottom: 40 }}
       >
-        <Calendar
-          startDate={startDate}
-          endDate={endDate}
-          attendanceData={attendanceData}
-          isLoading={isLoading}
-        />
+        <FadeInView delay={200}>
+          <Calendar
+            startDate={startDate}
+            endDate={endDate}
+            attendanceData={attendanceData}
+            isLoading={isLoading}
+          />
+        </FadeInView>
       </ScrollView>
     </View>
   );

@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { View, Text, Image, TouchableOpacity, TextInput, KeyboardAvoidingView } from "react-native";
+import { ScalePress } from "@/components/AnimatedComponents";
 import SettingsIcon from "@/lib/icons/SettingsIcon";
+import { HapticFeedback } from "@/utils/haptics";
+import { useState } from "react";
+import { Image, KeyboardAvoidingView, Text, TextInput, View } from "react-native";
 
 type SetItem = {
   id: number;
@@ -19,6 +21,7 @@ const WorkoutSetCard = () => {
   type EditableField = "previous" | "weight" | "reps";
 
   const handleChange = (index: number, field: EditableField, value: string) => {
+    HapticFeedback.selection(); // Add haptic feedback on change
     const newSets = [...sets];
     newSets[index][field] = value;
     setSets(newSets);
@@ -35,7 +38,7 @@ const WorkoutSetCard = () => {
   };
 
   return (
-   <KeyboardAvoidingView>
+    <KeyboardAvoidingView>
       <View className="bg-[#181818] rounded-2xl p-4 mx-4 mt-4">
         <View className="flex-row items-center justify-between pb-3 border-b border-white/10">
           <View className="flex-row items-center gap-3">
@@ -48,7 +51,7 @@ const WorkoutSetCard = () => {
               <Text className="text-[#9f9f9f] text-sm">Chest</Text>
             </View>
           </View>
-  
+
           <View className="flex-row items-center gap-2">
             <SettingsIcon />
             <View className="flex flex-col gap-1">
@@ -57,7 +60,7 @@ const WorkoutSetCard = () => {
             </View>
           </View>
         </View>
-  
+
         <View
           className="flex-row mt-4 py-2 justify-between "
           style={{
@@ -85,7 +88,7 @@ const WorkoutSetCard = () => {
             </Text>
           </View>
         </View>
-  
+
         {sets.map((set, index) => (
           <View
             key={set.id}
@@ -148,16 +151,16 @@ const WorkoutSetCard = () => {
             </View>
           </View>
         ))}
-  
-        <TouchableOpacity
+
+        <ScalePress
           onPress={addSet}
           className="mt-4 py-3"
           style={{ width: "100%" }}
         >
           <Text className="text-center text-white font-medium">Add Set</Text>
-        </TouchableOpacity>
+        </ScalePress>
       </View>
-   </KeyboardAvoidingView>
+    </KeyboardAvoidingView>
   );
 };
 

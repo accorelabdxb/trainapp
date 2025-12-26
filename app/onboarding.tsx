@@ -132,7 +132,14 @@ const Onboarding = () => {
         else navigateToDashboard();
       }
     } catch (error: any) {
-      console.error("OTP verification error:", JSON.stringify(error, null, 2));
+      console.error("OTP verification error object:", error);
+      console.error("OTP verification error stringified:", JSON.stringify(error, null, 2));
+      if (error && typeof error === 'object') {
+        console.error("Error keys:", Object.keys(error));
+        if ('status' in error) console.error("Error status:", (error as any).status);
+        if ('data' in error) console.error("Error data:", JSON.stringify((error as any).data));
+        if ('message' in error) console.error("Error message:", (error as any).message);
+      }
 
       // Handle token expiration error
       if (tokenManager.isTokenExpiredError(error)) {

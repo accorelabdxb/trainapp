@@ -1,5 +1,7 @@
+import { FadeInView, ScalePress } from "@/components/AnimatedComponents";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import { ChevronLeft } from "lucide-react-native";
+import { useRef, useState } from "react";
 import {
   Dimensions,
   Image,
@@ -11,11 +13,10 @@ import {
 } from "react-native";
 import ConfettiCannon from "react-native-confetti-cannon";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CONFETTI_COUNT, DEFAULT_POINTS_BALANCE } from "../constants";
+import { CONFETTI_COUNT } from "../constants";
 import { CircleChevronRight } from "../lib/icons/CircleChevronRight";
 import { X } from "../lib/icons/X";
 import { Product } from "../types";
-import { ChevronLeft } from "lucide-react-native";
 const Redeem = () => {
   const router = useRouter();
   const confettiRef = useRef<ConfettiCannon>(null);
@@ -112,13 +113,12 @@ const Redeem = () => {
         }}
       >
         <View className="px-6 bg-secbg flex flex-row items-center justify-between">
-          <TouchableOpacity
+          <ScalePress
             onPress={handleGoBack}
-                 className="w-11 h-11 bg-white rounded-full border-2 border-black flex justify-center items-center"
-          activeOpacity={0.7}
+            className="w-11 h-11 bg-white rounded-full border-2 border-black flex justify-center items-center"
           >
             <ChevronLeft size={24} color="#000" />
-          </TouchableOpacity>
+          </ScalePress>
           <Text className="text-white text-xl font-bold">Redeem Points</Text>
           <View className="w-16"></View>
         </View>
@@ -134,23 +134,25 @@ const Redeem = () => {
         <View className="pt-4">
           {/* Current Points */}
           <View className="p-6 mb-12 mt-8 flex justify-center items-center">
-            <View className="mb-4">
-              <Image
-                className="h-24 w-24 mr-3"
-                source={require("../assets/images/star.png")}
-              />
-              <View className="mt-3">
-                <Text className="text-white/60 text-lg mb-3 text-center">
-                  Your Points
-                </Text>
-                <Text className="text-amber-400 text-6xl font-light text-center">
-                  {coins}
-                </Text>
+            <FadeInView delay={100} className="items-center">
+              <View className="mb-4 text-center items-center">
+                <Image
+                  className="h-24 w-24 mr-3"
+                  source={require("../assets/images/star.png")}
+                />
+                <View className="mt-3">
+                  <Text className="text-white/60 text-lg mb-3 text-center">
+                    Your Points
+                  </Text>
+                  <Text className="text-amber-400 text-6xl font-light text-center">
+                    {coins}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <Text className="text-white/60 text-center text-md">
-              Redeem your points for amazing rewards and offers
-            </Text>
+              <Text className="text-white/60 text-center text-md">
+                Redeem your points for amazing rewards and offers
+              </Text>
+            </FadeInView>
           </View>
 
           {/* Featured Rewards */}
@@ -165,7 +167,7 @@ const Redeem = () => {
                 strokeWidth={1.5}
               />
             </View>
-            <TouchableOpacity
+            <ScalePress
               className="bg-secbg rounded-2xl p-4 mb-4 flex-row"
               onPress={() => handleRedeemPress(products[0])}
             >
@@ -190,15 +192,15 @@ const Redeem = () => {
                       {products[0].points} pts
                     </Text>
                   </View>
-                  <TouchableOpacity
+                  <ScalePress
                     className="bg-amber-500 px-4 py-2 rounded-full"
                     onPress={() => handleRedeemPress(products[0])}
                   >
                     <Text className="text-black font-bold text-sm">Redeem</Text>
-                  </TouchableOpacity>
+                  </ScalePress>
                 </View>
               </View>
-            </TouchableOpacity>
+            </ScalePress>
 
             <TouchableOpacity
               className="bg-secbg rounded-2xl p-4 mb-4 flex-row"

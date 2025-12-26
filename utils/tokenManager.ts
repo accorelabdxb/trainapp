@@ -1,5 +1,6 @@
-import { secureStorage } from "./secureStorage";
+import { decode as atob } from "base-64";
 import { authEvents } from "./authEvents";
+import { secureStorage } from "./secureStorage";
 
 export class TokenExpiredError extends Error {
   constructor(message: string = "Token has expired") {
@@ -16,6 +17,7 @@ export const tokenManager = {
     return (
       error?.name === "TokenExpiredError" ||
       error?.response?.status === 401 ||
+      error?.status === 401 ||
       error?.message === "TOKEN_EXPIRED"
     );
   },
@@ -60,14 +62,27 @@ export const tokenManager = {
         return null;
       }
 
-      const payload = JSON.parse(atob(parts[1]));
+      // Safe base64 decode for React Native/Hermes
+      const base64Url = parts[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const jsonPayload = decodeURIComponent(
+        atob(base64)
+          .split('')
+          .map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          })
+          .join('')
+      );
+
+      const payload = JSON.parse(jsonPayload);
       if (payload.exp) {
         return new Date(payload.exp * 1000);
       }
 
       return null;
     } catch (error) {
-      console.error("Error parsing token expiration:", error);
+      // Fallback if atob is not available or fails
+      console.warn("Error parsing token expiration:", error);
       return null;
     }
   },

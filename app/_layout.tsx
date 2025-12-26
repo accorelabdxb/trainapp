@@ -1,5 +1,6 @@
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Provider } from "react-redux";
 import { ErrorBoundary } from "../components/common/ErrorBoundary";
@@ -67,15 +68,17 @@ const AuthRouter = () => {
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <SafeAreaProvider>
-        <ErrorBoundary>
-          <AppProvider>
-            <ProfileProvider>
-              <AuthRouter />
-            </ProfileProvider>
-          </AppProvider>
-        </ErrorBoundary>
-      </SafeAreaProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ErrorBoundary>
+            <AppProvider>
+              <ProfileProvider>
+                <AuthRouter />
+              </ProfileProvider>
+            </AppProvider>
+          </ErrorBoundary>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
     </Provider>
   );
 }

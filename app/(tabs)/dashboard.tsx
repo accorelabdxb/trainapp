@@ -1,3 +1,4 @@
+import { Celebration, FadeInView, ScalePress } from "@/components/AnimatedComponents";
 import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
 import { LogoutButton } from "@/components/common/LogoutButton";
 import { useProfile } from "@/context/hooks/useProfile";
@@ -9,11 +10,13 @@ import {
 import { useGetAllChallengesQuery } from "@/store/slices/challengesApi";
 import { BASE_FILE_URL } from "@/utils/api";
 import { useRouter } from "expo-router";
+import { Flame } from "lucide-react-native";
 import moment from "moment";
 import React, { useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
+  RefreshControl,
   ScrollView,
   Text,
   TouchableOpacity,
@@ -46,6 +49,16 @@ const Dashboard = () => {
   );
   const [selectedDate, setSelectedDate] = React.useState<string | null>(null);
   const [coinsEarned, setCoinsEarned] = React.useState(0);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [showCelebration, setShowCelebration] = React.useState(false);
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    // Simulate refresh or refetch data
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
+  }, []);
 
   // RTK Query hooks
   const startDate = moment().startOf("week").format("YYYY-MM-DD");
@@ -72,8 +85,10 @@ const Dashboard = () => {
   };
 
   const handlePointsPress = () => {
-    console.log("Points pressed!");
-    // Pass the coinsEarned state as a parameter
+    HapticFeedback.light(); // Add haptic feedback
+    // Trigger celebration
+    setShowCelebration(true);
+    // You might also want to navigate or show a modal here
     router.push({
       pathname: "/redeem",
       params: { coins: coinsEarned },
@@ -197,17 +212,26 @@ const Dashboard = () => {
           style={{ marginTop: 120 }}
           contentContainerStyle={{ paddingBottom: 10 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#fff" />
+          }
         >
           <View className="pt-8">
-            <View className="flex flex-row items-center justify-between bg-secbg p-4 px-4 mx-2 rounded-2xl">
-              <UserGreeting />
+            <FadeInView delay={100} className="flex flex-row items-center justify-between bg-secbg p-4 px-4 mx-2 rounded-2xl">
+              <View>
+                <UserGreeting />
+                <View className="flex-row items-center mt-1">
+                  <Flame size={16} color="#FF5722" fill="#FF5722" />
+                  <Text className="text-white/70 text-xs ml-1">3 Day Streak</Text>
+                </View>
+              </View>
               <PointsCard
                 onPress={handlePointsPress}
                 coinsEarned={coinsEarned}
               />
-            </View>
+            </FadeInView>
 
-            <View className="bg-secbg p-4 px-4 mt-8 mx-2 rounded-2xl">
+            <FadeInView delay={200} className="bg-secbg p-4 px-4 mt-8 mx-2 rounded-2xl">
               <View className="flex flex-row items-center justify-between mb-2">
                 <Text className="text-white text-lg">
                   Consistency is Your Superpower! 💪
@@ -269,7 +293,7 @@ const Dashboard = () => {
                   })}
                 </View>
               )}
-            </View>
+            </FadeInView>
 
             <View className="mt-8 px-4">
               <Text className="text-white font-bold text-xl">
@@ -287,13 +311,14 @@ const Dashboard = () => {
                   }}
                 >
                   {workoutStats.map((stat, index) => (
-                    <StatCard
-                      key={index}
-                      icon={stat.icon}
-                      label={stat.label}
-                      value={stat.value}
-                      subtitle={stat.subtitle}
-                    />
+                    <FadeInView key={index} delay={index * 100} duration={400}>
+                      <StatCard
+                        icon={stat.icon}
+                        label={stat.label}
+                        value={stat.value}
+                        subtitle={stat.subtitle}
+                      />
+                    </FadeInView>
                   ))}
                 </ScrollView>
               </View>
@@ -301,10 +326,9 @@ const Dashboard = () => {
 
             <View className="mt-8 px-4">
               <View className="flex flex-row justify-between items-center">
-                <TouchableOpacity
+                <ScalePress
                   className="bg-secbg rounded-2xl me-4 w-6/12 h-60 overflow-hidden"
                   onPress={handleImageButtonPress}
-                  activeOpacity={0.7}
                 >
                   <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                     <Text className="text-black text-xs">Nihas Latheef</Text>
@@ -320,11 +344,10 @@ const Dashboard = () => {
                       </Text>
                     </View>
                   </View>
-                </TouchableOpacity>
-                <TouchableOpacity
+                </ScalePress>
+                <ScalePress
                   className="bg-secbg rounded-2xl w-6/12 h-60 overflow-hidden"
                   onPress={handleImageButtonPress}
-                  activeOpacity={0.7}
                 >
                   <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
                     <Text className="text-black text-xs">Manuprasad</Text>
@@ -340,7 +363,7 @@ const Dashboard = () => {
                       </Text>
                     </View>
                   </View>
-                </TouchableOpacity>
+                </ScalePress>
               </View>
             </View>
 
@@ -365,10 +388,9 @@ const Dashboard = () => {
                   >
                     {/* Map over the first 4 challenges from the state */}
                     {challenges.slice(0, 4).map((challenge) => (
-                      <TouchableOpacity
+                      <ScalePress
                         key={challenge.id}
                         className="bg-secbg rounded-2xl w-52 pb-6 mt-3 me-4 flex items-center relative"
-                        activeOpacity={0.8}
                         onPress={() => handleChallengePress(challenge.id)} // Use navigation handler
                       >
                         <View className="absolute top-2 left-2 bg-white rounded-full w-auto px-3 py-1 mt-2 ms-2 z-10">
@@ -403,7 +425,7 @@ const Dashboard = () => {
                             </Text>
                           </View>
                         </View>
-                      </TouchableOpacity>
+                      </ScalePress>
                     ))}
                   </ScrollView>
                 </View>
@@ -530,8 +552,9 @@ const Dashboard = () => {
             <LogoutButton />
           </View>
         </ScrollView>
-      </View>
-    </ApiErrorBoundary>
+      </View >
+      <Celebration trigger={showCelebration} onFinished={() => setShowCelebration(false)} />
+    </ApiErrorBoundary >
   );
 };
 

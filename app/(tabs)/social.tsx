@@ -1,3 +1,4 @@
+import { HeartBurst, Skeleton } from "@/components/AnimatedComponents";
 import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
 import {
   ServerPost,
@@ -17,7 +18,6 @@ import React, {
   useState,
 } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Dimensions,
   Modal,
@@ -26,8 +26,9 @@ import {
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 type Post = {
@@ -99,6 +100,7 @@ const Social = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const videoRef = useRef<Video>(null);
+  const [showBurst, setShowBurst] = useState<{ [key: number]: boolean }>({});
 
   // --- SCROLL FIX 1: Create a ref for the ScrollView ---
   const scrollViewRef = useRef<ScrollView>(null);
@@ -196,6 +198,14 @@ const Social = () => {
     }
   };
 
+  const onDoubleTapLike = (postId: number) => {
+    handleReact(postId, "like");
+    setShowBurst((prev) => ({ ...prev, [postId]: true }));
+    setTimeout(() => {
+      setShowBurst((prev) => ({ ...prev, [postId]: false }));
+    }, 1000);
+  };
+
   const openFullScreen = () => {
     setShowFullScreen(true);
     Animated.parallel([
@@ -289,52 +299,61 @@ const Social = () => {
           onPress={() => handleSelectPost(post)}
           activeOpacity={0.9}
         >
-          <View className="relative">
-            {post.mediaType === "image" ? (
-              <Image
-                source={{ uri: post.mediaUri }}
-                style={{
-                  width: "100%",
-                  height: imageHeights[post.id] || 200,
-                  borderRadius: 16,
-                }}
-                contentFit="cover"
-              />
-            ) : (
-              <View
-                style={{
-                  width: "100%",
-                  aspectRatio: videoDimensions?.[post.id]
-                    ? videoDimensions[post.id].width /
-                      videoDimensions[post.id].height
-                    : 16 / 9,
-                  borderRadius: 16,
-                  backgroundColor: "#000",
-                  overflow: "hidden",
-                }}
-              >
-                <Video
-                  source={{ uri: post.mediaUri }}
-                  style={{ width: "100%", height: "100%" }}
-                  resizeMode={ResizeMode.COVER}
-                  isMuted={true}
-                  shouldPlay={true}
-                  isLooping={true}
-                  volume={0}
-                  onReadyForDisplay={(event) => {
-                    const { width, height } = event.naturalSize;
-                    setVideoDimensions((prev) => ({
-                      ...prev,
-                      [post.id]: { width, height },
-                    }));
-                  }}
-                />
-              </View>
-            )}
+          {showBurst[post.id] && <HeartBurst />}
 
-            <ReactionDisplay reactionsSummary={post.reactionsSummary} />
-          </View>
-        </TouchableOpacity>
+          <GestureDetector
+            gesture={Gesture.Tap().numberOfTaps(2).onEnd(() => {
+              runOnJS(onDoubleTapLike)(post.id);
+            })}
+          >
+            <View>
+              {post.mediaType === "image" ? (
+                <Image
+                  source={{ uri: post.mediaUri }}
+                  style={{
+                    width: "100%",
+                    height: imageHeights[post.id] || 200,
+                    borderRadius: 16,
+                  }}
+                  contentFit="cover"
+                />
+              ) : (
+                <View
+                  style={{
+                    width: "100%",
+                    aspectRatio: videoDimensions?.[post.id]
+                      ? videoDimensions[post.id].width /
+                      videoDimensions[post.id].height
+                      : 16 / 9,
+                    borderRadius: 16,
+                    backgroundColor: "#000",
+                    overflow: "hidden",
+                  }}
+                >
+                  <Video
+                    source={{ uri: post.mediaUri }}
+                    style={{ width: "100%", height: "100%" }}
+                    resizeMode={ResizeMode.COVER}
+                    isMuted={true}
+                    shouldPlay={true}
+                    isLooping={true}
+                    volume={0}
+                    onReadyForDisplay={(event) => {
+                      const { width, height } = event.naturalSize;
+                      setVideoDimensions((prev) => ({
+                        ...prev,
+                        [post.id]: { width, height },
+                      }));
+                    }}
+                  />
+                </View>
+              )}
+            </View>
+          </GestureDetector>
+
+          <ReactionDisplay reactionsSummary={post.reactionsSummary} />
+
+        </TouchableOpacity >
 
         <View className="flex-row items-center mt-2">
           <Image
@@ -349,7 +368,7 @@ const Social = () => {
             <Text className="text-white/50 text-xs">{post.time}</Text>
           </View>
         </View>
-      </View>
+      </View >
     ),
     [imageHeights, videoDimensions, handleSelectPost]
   );
@@ -412,7 +431,7 @@ const Social = () => {
                       width: screenWidth - 16,
                       aspectRatio: videoDimensions[selectedPost.id]
                         ? videoDimensions[selectedPost.id].width /
-                          videoDimensions[selectedPost.id].height
+                        videoDimensions[selectedPost.id].height
                         : 16 / 9,
                       borderRadius: 24,
                       overflow: "hidden",
@@ -642,7 +661,7 @@ const Social = () => {
                               width: "100%",
                               aspectRatio: videoDimensions?.[post.id]
                                 ? videoDimensions[post.id].width /
-                                  videoDimensions[post.id].height
+                                videoDimensions[post.id].height
                                 : 16 / 9,
                               borderRadius: 16,
                               backgroundColor: "#000",
@@ -719,7 +738,7 @@ const Social = () => {
                               width: "100%",
                               aspectRatio: videoDimensions?.[post.id]
                                 ? videoDimensions[post.id].width /
-                                  videoDimensions[post.id].height
+                                videoDimensions[post.id].height
                                 : 16 / 9,
                               borderRadius: 16,
                               backgroundColor: "#000",
@@ -798,13 +817,36 @@ const Social = () => {
             style={{
               position: "absolute",
               top: 140,
-              left: 0,
-              right: 0,
-              alignItems: "center",
+              left: 20,
+              right: 20,
               zIndex: 50,
             }}
           >
-            <ActivityIndicator size="large" />
+            {/* Skeleton Loading State */}
+            <View className="flex-row justify-between">
+              <View className="w-[48%]">
+                <Skeleton height={200} borderRadius={16} style={{ marginBottom: 16 }} />
+                <View className="flex-row items-center mb-4">
+                  <Skeleton width={32} height={32} borderRadius={16} />
+                  <View className="ml-2 flex-1">
+                    <Skeleton width="80%" height={12} style={{ marginBottom: 4 }} />
+                    <Skeleton width="40%" height={10} />
+                  </View>
+                </View>
+                <Skeleton height={250} borderRadius={16} style={{ marginBottom: 16 }} />
+              </View>
+              <View className="w-[48%]">
+                <Skeleton height={280} borderRadius={16} style={{ marginBottom: 16 }} />
+                <View className="flex-row items-center mb-4">
+                  <Skeleton width={32} height={32} borderRadius={16} />
+                  <View className="ml-2 flex-1">
+                    <Skeleton width="80%" height={12} style={{ marginBottom: 4 }} />
+                    <Skeleton width="40%" height={10} />
+                  </View>
+                </View>
+                <Skeleton height={150} borderRadius={16} style={{ marginBottom: 16 }} />
+              </View>
+            </View>
           </View>
         )}
 
