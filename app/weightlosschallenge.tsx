@@ -4,21 +4,21 @@ import { Calendar, ChevronLeft } from "lucide-react-native";
 import { useState } from "react";
 import RNModal from "react-native-modal";
 
+import { ScalePress, Skeleton } from "@/components/AnimatedComponents";
+import { useToast } from "@/context/ToastContext";
 import {
   useGetChallengeDetailsQuery,
   useJoinChallengeMutation
 } from "@/store/slices/challengesApi";
 import { BASE_FILE_URL } from "@/utils/api";
 import {
-  ActivityIndicator,
-  Alert,
   Dimensions,
   FlatList,
   Image,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 
 const participants = [
@@ -71,51 +71,56 @@ const WeightLossChallenge = () => {
   const [joinChallenge, { isLoading: isJoining }] = useJoinChallengeMutation();
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
+  const { showToast } = useToast();
 
   const handleGoBack = () => {
     router.push("/challenges");
   };
 
-  const handleJoinChallenge = () => {
+  const handleJoinChallenge = async () => {
     if (details?.isJoined) return;
+    if (!challengeId) return;
 
-    Alert.alert(
-      "Join Challenge",
-      "Are you sure you want to join this challenge?",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Join",
-          onPress: async () => {
-            if (!challengeId) return;
-            try {
-              const response = await joinChallenge(challengeId).unwrap();
+    try {
+      // No blocking alert, just proceed
+      const response = await joinChallenge(challengeId).unwrap();
 
-              if (response.success) {
-                router.push("/challenges");
-              } else {
-                Alert.alert("Error", response.message || "Failed to join.");
-              }
-            } catch (error) {
-              Alert.alert("Error", "An error occurred. Please try again.");
-            }
-          },
-        },
-      ]
-    );
+      if (response.success) {
+        showToast("Successfully joined the challenge!", "success");
+        router.push("/challenges");
+      } else {
+        showToast(response.message || "Failed to join.", "error");
+      }
+    } catch (error) {
+      showToast("An error occurred. Please try again.", "error");
+    }
   };
 
-  // Handle loading and error states
+  // Handle loading states
   if (isDetailsLoading) {
     return (
-      <View className='flex-1 bg-black justify-center items-center'>
-        <ActivityIndicator
-          size='large'
-          color='#fff'
-        />
+      <View className='flex-1 bg-black'>
+        <View className='pt-[60px] pb-[14px] px-4 flex flex-row items-center justify-between'>
+          <Skeleton width={44} height={44} borderRadius={22} />
+          <Skeleton width={200} height={24} />
+          <View className='w-[44px]' />
+        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+          <View className='relative'>
+            <Skeleton width="100%" height={400} borderRadius={0} />
+          </View>
+          <View className='px-4 mt-7'>
+            <Skeleton width="80%" height={28} style={{ marginBottom: 12 }} />
+            <Skeleton width="100%" height={16} style={{ marginBottom: 4 }} />
+            <Skeleton width="90%" height={16} style={{ marginBottom: 4 }} />
+            <Skeleton width="60%" height={16} style={{ marginBottom: 20 }} />
+
+            <View className='flex flex-row items-center mt-2'>
+              <Skeleton width={24} height={24} borderRadius={4} style={{ marginRight: 10 }} />
+              <Skeleton width={150} height={24} borderRadius={6} />
+            </View>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -366,15 +371,16 @@ const WeightLossChallenge = () => {
       </RNModal>
       {/* // In WeightLossChallenge.tsx, replace the bottom TouchableOpacity with
       this code */}
-      <TouchableOpacity
-        activeOpacity={0.8}
+      <ScalePress
+        scaleActive={0.96}
         onPress={handleJoinChallenge}
-        disabled={details.isJoined || spotsOpen <= 0}
+        // Disable while joining or if already joined/full
+        disabled={details.isJoined || spotsOpen <= 0 || isJoining}
         className={`absolute left-[14px] right-[14px] bottom-[28px] h-[57px] rounded-[51px] flex flex-row items-center shadow-lg px-5 ${details.isJoined || spotsOpen <= 0
-            ? "bg-gray-600 border-gray-600 justify-center"
-            : "bg-white border-white justify-start"
+          ? "bg-gray-600 border-gray-600 justify-center"
+          : "bg-white border-white justify-start"
           }`}>
-        {!details.isJoined && spotsOpen > 0 && (
+        {!details.isJoined && spotsOpen > 0 && !isJoining && (
           <Text className='font-medium text-[13px] text-[#494949] text-left capitalize'>
             {spotsOpen} Spot{spotsOpen !== 1 ? "s" : ""} Open
           </Text>
@@ -383,9 +389,9 @@ const WeightLossChallenge = () => {
         <Text
           className={`absolute left-0 right-0 text-center font-medium text-lg tracking-[0.22px] ${details.isJoined || spotsOpen <= 0 ? "text-white" : "text-black"
             }`}>
-          {details.isJoined ? "Joined" : spotsOpen > 0 ? "Join" : "Full"}
+          {isJoining ? "Joining..." : details.isJoined ? "Joined" : spotsOpen > 0 ? "Join" : "Full"}
         </Text>
-      </TouchableOpacity>
+      </ScalePress>
     </View>
   );
 };

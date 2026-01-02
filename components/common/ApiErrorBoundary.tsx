@@ -1,3 +1,4 @@
+import { HapticFeedback } from "@/utils/haptics";
 import { FetchBaseQueryError } from "@reduxjs/toolkit/query";
 import { Component, ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -25,6 +26,7 @@ export class ApiErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error | FetchBaseQueryError, errorInfo: any) {
     console.error("ApiErrorBoundary caught an error:", error, errorInfo);
+    HapticFeedback.error();
 
     // Log network errors specifically
     if ("status" in error) {

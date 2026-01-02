@@ -1,6 +1,5 @@
 import React from "react";
 import { Image, ImageSourcePropType, Text, View } from "react-native";
-import { GameCard } from "./GamifiedUI";
 
 interface StatCardProps {
   icon: ImageSourcePropType;
@@ -16,23 +15,11 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtitle,
 }) => {
   return (
-    <GameCard
-      colors={['#3a3a3a', '#1a1a1a']}
-      style={{
-        padding: 24,
-        borderRadius: 24,
-        width: 160,
-        marginRight: 16,
-        marginTop: 12,
-      }}
-      depth={5}
-    >
-      <View>
-        <Image className="h-8 w-8 opacity-90" source={icon} />
-        <Text className="text-white/70 font-medium my-3 text-sm tracking-wide">{label}</Text>
-        <Text className="text-white text-3xl font-black">{value}</Text>
-        <Text className="text-xs text-white/50 mt-1 font-medium">{subtitle}</Text>
-      </View>
-    </GameCard>
+    <View className="bg-secbg p-6 rounded-2xl w-40 mt-3 me-4 h-[180px]">
+      <Image className="h-8 w-8" source={icon} />
+      <Text className="text-white/80 font-light my-2">{label}</Text>
+      <Text className="text-[#F0B32D] text-2xl">{value}</Text>
+      <Text className="text-xs text-white/40">{subtitle}</Text>
+    </View>
   );
 };

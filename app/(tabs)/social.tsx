@@ -1,5 +1,6 @@
 import { HeartBurst, Skeleton } from "@/components/AnimatedComponents";
 import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
+import { useToast } from "@/context/ToastContext";
 import {
   ServerPost,
   useAddOrUpdateReactionMutation,
@@ -81,6 +82,7 @@ const Social = () => {
   } = useGetAllPostsQuery();
   const [addOrUpdateReaction] = useAddOrUpdateReactionMutation();
   const [removeReaction] = useRemoveReactionMutation();
+  const { showToast } = useToast();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [imageHeights, setImageHeights] = useState<{ [key: number]: number }>(
@@ -198,6 +200,7 @@ const Social = () => {
       // Optimistic updates are handled by RTK Query automatically
     } catch (error) {
       console.error("Failed to update reaction:", error);
+      showToast("Failed to update reaction", "error");
       // RTK Query will automatically rollback on error
     }
   };
@@ -316,14 +319,14 @@ const Social = () => {
           >
             <View>
               {post.mediaType === "image" ? (
-                <Image
+                <RNImage
                   source={{ uri: post.mediaUri }}
                   style={{
                     width: "100%",
                     height: imageHeights[post.id] || 200,
                     borderRadius: 16,
                   }}
-                  contentFit="cover"
+                  resizeMode="cover"
                 />
               ) : (
                 <View
@@ -380,6 +383,46 @@ const Social = () => {
     ),
     [imageHeights, videoDimensions, handleSelectPost]
   );
+
+  if (loading && !refreshing) {
+    return (
+      <View className="flex-1 bg-black pt-12 px-2">
+        <View className="flex-row justify-between mb-4 px-2">
+          <Skeleton width={150} height={32} />
+        </View>
+        <View className="flex-row justify-between">
+          <View className="w-[49%]">
+            {[1, 2, 3].map(i => (
+              <View key={i} className="mb-4">
+                <Skeleton width="100%" height={i % 2 === 0 ? 250 : 180} borderRadius={16} />
+                <View className="flex-row items-center mt-2">
+                  <Skeleton width={32} height={32} borderRadius={16} />
+                  <View className="ml-2">
+                    <Skeleton width={80} height={12} style={{ marginBottom: 4 }} />
+                    <Skeleton width={40} height={10} />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+          <View className="w-[49%] mt-8">
+            {[1, 2, 3].map(i => (
+              <View key={i} className="mb-4">
+                <Skeleton width="100%" height={i % 2 === 0 ? 180 : 250} borderRadius={16} />
+                <View className="flex-row items-center mt-2">
+                  <Skeleton width={32} height={32} borderRadius={16} />
+                  <View className="ml-2">
+                    <Skeleton width={80} height={12} style={{ marginBottom: 4 }} />
+                    <Skeleton width={40} height={10} />
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    )
+  }
 
   if (selectedPost) {
     return (
@@ -654,14 +697,14 @@ const Social = () => {
                     >
                       <View className="relative">
                         {post.mediaType === "image" ? (
-                          <Image
+                          <RNImage
                             source={{ uri: post.mediaUri }}
                             style={{
                               width: "100%",
                               height: imageHeights[post.id] || 200,
                               borderRadius: 16,
                             }}
-                            contentFit="cover"
+                            resizeMode="cover"
                           />
                         ) : (
                           <View
@@ -731,14 +774,14 @@ const Social = () => {
                     >
                       <View className="relative">
                         {post.mediaType === "image" ? (
-                          <Image
+                          <RNImage
                             source={{ uri: post.mediaUri }}
                             style={{
                               width: "100%",
                               height: imageHeights[post.id] || 200,
                               borderRadius: 16,
                             }}
-                            contentFit="cover"
+                            resizeMode="cover"
                           />
                         ) : (
                           <View

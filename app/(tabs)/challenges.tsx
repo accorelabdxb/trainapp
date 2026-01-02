@@ -1,3 +1,4 @@
+import { Skeleton } from "@/components/AnimatedComponents";
 import { ApiErrorBoundary } from "@/components/common/ApiErrorBoundary";
 import {
   useGetActiveChallengesQuery,
@@ -9,7 +10,6 @@ import { FontAwesome5 } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useEffect, useRef } from "react";
 import {
-  ActivityIndicator,
   Animated,
   Easing,
   Image,
@@ -17,7 +17,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 interface Challenge {
@@ -190,8 +190,47 @@ const Challenges = () => {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <ActivityIndicator size="large" color="#fff" />
+      <View className="flex-1 bg-secbg">
+        {/* Fixed Header Skeleton */}
+        <SafeAreaView className="bg-secbg absolute top-0 left-0 right-0 z-10 border-b border-gray-800" style={{ height: 100 }}>
+          <View className="px-6 mt-12 bg-secbg">
+            <Skeleton width={180} height={32} />
+          </View>
+        </SafeAreaView>
+
+        <ScrollView className="flex-1 bg-black px-3" style={{ marginTop: 120 }}>
+          {/* My Challenges Skeleton */}
+          <View className="pt-4">
+            <Skeleton width={150} height={24} style={{ marginBottom: 16 }} />
+            <View className="flex-row">
+              {[1, 2].map(i => (
+                <View key={i} className="bg-secbg rounded-2xl w-52 h-64 me-4 overflow-hidden">
+                  <Skeleton width="100%" height={160} borderRadius={16} />
+                  <View className="p-4">
+                    <Skeleton width="80%" height={20} style={{ marginBottom: 8 }} />
+                    <Skeleton width="40%" height={16} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Active Challenges Skeleton */}
+          <View className="mt-8">
+            <Skeleton width={180} height={24} style={{ marginBottom: 16 }} />
+            <View className="flex-row">
+              {[1, 2].map(i => (
+                <View key={i} className="bg-secbg rounded-2xl w-52 h-64 me-4 overflow-hidden">
+                  <Skeleton width="100%" height={160} borderRadius={16} />
+                  <View className="p-4">
+                    <Skeleton width="80%" height={20} style={{ marginBottom: 16 }} />
+                    <Skeleton width={80} height={30} borderRadius={15} />
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
       </View>
     );
   }

@@ -1,19 +1,19 @@
+import { Skeleton } from "@/components/AnimatedComponents";
 import PositionCard from "@/components/challenges/PositionCard";
+import { useToast } from "@/context/ToastContext";
+import { BASE_FILE_URL, challengesAPI } from "@/utils/api";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ChevronLeft } from "lucide-react-native";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ChevronRight } from "../lib/icons/ChevronRight";
-import { BASE_FILE_URL, challengesAPI } from "@/utils/api";
 
 interface ChallengeDetail {
   id: number;
@@ -89,6 +89,7 @@ const positions = [
 
 const ThirtyDayWarrior = () => {
   const { id } = useLocalSearchParams();
+  const { showToast } = useToast();
   const [details, setDetails] = useState<ChallengeDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
@@ -107,7 +108,7 @@ const ThirtyDayWarrior = () => {
           console.log("My Challenge Details:", data);
         } catch (error) {
           console.error("Failed to fetch challenge details:", error);
-          Alert.alert("Error", "Could not load challenge details.");
+          showToast("Could not load challenge details", "error");
         } finally {
           setLoading(false);
         }
@@ -118,9 +119,21 @@ const ThirtyDayWarrior = () => {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-black justify-center items-center">
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
+      <SafeAreaView className="flex-1 bg-black">
+        <View className="pt-4 pb-[10px] px-4 flex flex-row items-center justify-between">
+          <Skeleton width={44} height={44} borderRadius={22} />
+          <Skeleton width={200} height={24} />
+          <View className="w-[44px]" />
+        </View>
+        <View className="px-0 relative mt-4">
+          <Skeleton width="100%" height={400} borderRadius={0} />
+        </View>
+        <View className="px-4 mt-7">
+          <Skeleton width="60%" height={28} style={{ marginBottom: 12 }} />
+          <Skeleton width="100%" height={16} style={{ marginBottom: 4 }} />
+          <Skeleton width="90%" height={16} />
+        </View>
+      </SafeAreaView>
     );
   }
 
@@ -225,7 +238,7 @@ const ThirtyDayWarrior = () => {
       <TouchableOpacity
         activeOpacity={0.8}
         className="h-[57px] mb-4 rounded-[51px] bg-white border border-white flex flex-row items-center justify-center shadow-lg px-5"
-        onPress={() => {}}
+        onPress={() => { }}
       >
         <Text className="text-center font-medium text-lg text-black tracking-[0.22px]">
           Redeem Prize

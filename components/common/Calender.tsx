@@ -1,6 +1,7 @@
 // components/Calendar.tsx
+import { Skeleton } from "@/components/AnimatedComponents";
 import moment from "moment";
-import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 
 interface CalendarDay {
   date: number | null; // null for empty cells
@@ -44,7 +45,7 @@ const Calendar = ({
 
       const days: CalendarDay[] = [];
 
-   
+
       for (
         let e = 0;
         e < (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1);
@@ -133,9 +134,30 @@ const Calendar = ({
   };
   if (isLoading) {
     return (
-      <View className="flex items-center justify-center py-20">
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text className="text-white mt-4">Loading attendance data...</Text>
+      <View className="mx-4 mb-8">
+        <View className="bg-[#181818] p-6 rounded-2xl">
+          <Skeleton width={150} height={32} style={{ marginBottom: 16 }} />
+          {/* Weekday headers skeleton */}
+          <View className="flex-row justify-around mb-4 px-2">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <View key={i} className="w-12 items-center">
+                <Skeleton width={20} height={14} />
+              </View>
+            ))}
+          </View>
+          {/* Calendar Grid Skeleton */}
+          <View className="mt-2">
+            {Array.from({ length: 5 }).map((_, weekIndex) => (
+              <View key={weekIndex} className="flex-row justify-around mb-2">
+                {Array.from({ length: 7 }).map((__, dayIndex) => (
+                  <View key={dayIndex} className="w-12 h-12 m-1 rounded-full overflow-hidden">
+                    <Skeleton width={48} height={48} borderRadius={24} />
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        </View>
       </View>
     );
   }

@@ -27,7 +27,7 @@ interface ScalePressProps extends PressableProps {
 export const ScalePress: React.FC<ScalePressProps> = ({
     children,
     style,
-    scaleActive = 0.95,
+    scaleActive = 0.98,
     haptic = true,
     onPressIn,
     onPressOut,

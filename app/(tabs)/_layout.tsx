@@ -3,7 +3,13 @@ import { Tabs } from 'expo-router';
 import { BicepsFlexed, Dumbbell, Home, PlusCircle, Users } from 'lucide-react-native';
 import { View } from 'react-native';
 
+import { HapticFeedback } from '@/utils/haptics';
+
 export default function Layout() {
+    const handleTabPress = () => {
+        HapticFeedback.selection();
+    };
+
     return (
         <Tabs
             screenOptions={{
@@ -22,6 +28,9 @@ export default function Layout() {
         >
             <Tabs.Screen
                 name="dashboard"
+                listeners={{
+                    tabPress: handleTabPress,
+                }}
                 options={{
                     title: 'Home',
                     tabBarIcon: ({ color, focused }) => (
@@ -33,6 +42,9 @@ export default function Layout() {
             />
             <Tabs.Screen
                 name="challenges"
+                listeners={{
+                    tabPress: handleTabPress,
+                }}
                 options={{
                     title: 'Challenges',
                     tabBarIcon: ({ color, focused }) => (
@@ -44,6 +56,9 @@ export default function Layout() {
             />
             <Tabs.Screen
                 name="camera"
+                listeners={{
+                    tabPress: handleTabPress,
+                }}
                 options={{
                     title: '',
                     tabBarIcon: ({ color, focused }) => (
@@ -58,6 +73,9 @@ export default function Layout() {
             />
             <Tabs.Screen
                 name="workout"
+                listeners={{
+                    tabPress: handleTabPress,
+                }}
                 options={{
                     title: 'Workout',
                     tabBarIcon: ({ color, focused }) => (
@@ -69,6 +87,9 @@ export default function Layout() {
             />
             <Tabs.Screen
                 name="social"
+                listeners={{
+                    tabPress: handleTabPress,
+                }}
                 options={{
                     title: 'Social',
                     tabBarIcon: ({ color, focused }) => (

@@ -1,3 +1,4 @@
+import { useToast } from "@/context/ToastContext";
 import {
   useSendOtpMutation,
   useVerifyOtpMutation,
@@ -16,6 +17,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from "react-native-reanimated";
 import { useProfile } from "../context/hooks/useProfile";
 import { ChevronRight } from "../lib/icons/ChevronRight";
 import { tokenManager } from "../utils/tokenManager";
@@ -31,6 +33,30 @@ const Onboarding = () => {
   const [otp, setOtp] = useState("");
   const inputRef = useRef<TextInput>(null);
   const scrollViewRef = useRef<ScrollView>(null);
+
+  const { showToast } = useToast();
+  const shakeOffset = useSharedValue(0);
+
+  const shakeUI = () => {
+    shakeOffset.value = withSequence(
+      withTiming(-10, { duration: 50 }),
+      withRepeat(withTiming(10, { duration: 100 }), 3, true),
+      withTiming(0, { duration: 50 })
+    );
+  };
+
+  const shakeStyle = useAnimatedStyle(() => {
+    return {
+      transform: [{ translateX: shakeOffset.value }],
+    };
+  });
+
+  // Auto-submit when OTP is 4 digits
+  useEffect(() => {
+    if (otp.length === 4) {
+      handleVerifyOtp();
+    }
+  }, [otp]);
 
   // Handle keyboard events for Android
   useEffect(() => {
@@ -80,15 +106,13 @@ const Onboarding = () => {
   // Handle OTP verification
   const handleVerifyOtp = async () => {
     if (otp.length !== 4) {
-      Alert.alert("Error", "Please enter a valid 4-digit OTP");
+      // Don't show alert for auto-submit check, just return or shake if manually triggered
+      if (otp.length > 0) shakeUI();
       return;
     }
 
     if (!user?.mobileNumber) {
-      Alert.alert(
-        "Error",
-        "No mobile number found. Please try logging in again."
-      );
+      showToast("No mobile number found. Please try logging in again.", "error");
       return;
     }
 
@@ -161,7 +185,10 @@ const Onboarding = () => {
         error?.message ||
         "Invalid OTP. Please try again.";
       setError(errorMessage);
-      Alert.alert("Error", errorMessage);
+      showToast(errorMessage, "error");
+      shakeUI();
+      // Clear OTP on error for better UX
+      setOtp("");
     } finally {
       setLoading(false);
     }
@@ -170,10 +197,7 @@ const Onboarding = () => {
   // Handle resend OTP
   const handleResendOtp = async () => {
     if (!user?.mobileNumber) {
-      Alert.alert(
-        "Error",
-        "No mobile number found. Please try logging in again."
-      );
+      showToast("No mobile number found. Please try logging in again.", "error");
       return;
     }
 
@@ -185,7 +209,7 @@ const Onboarding = () => {
         userId: null,
         phoneNumber: user.mobileNumber,
       }).unwrap();
-      Alert.alert("Success", "OTP has been resent to your mobile number");
+      showToast("OTP has been resent to your mobile number", "success");
     } catch (error: any) {
       console.error("Resend OTP error:", error);
 
@@ -209,7 +233,7 @@ const Onboarding = () => {
         error?.message ||
         "Failed to resend OTP. Please try again.";
       setError(errorMessage);
-      Alert.alert("Error", errorMessage);
+      showToast(errorMessage, "error");
     } finally {
       setLoading(false);
     }
@@ -280,15 +304,16 @@ const Onboarding = () => {
               {Array.from({ length: 4 }).map((_, index) => {
                 const isActive = index === otp.length;
                 return (
-                  <View
+                  <Animated.View
                     key={index}
+                    style={[shakeStyle]}
                     className={`bg-input rounded-xl items-center justify-center h-20 w-20 border-2 ${isActive ? "border-amber-400" : "border-transparent"
                       }`}
                   >
                     <Text className="text-white text-2xl font-bold">
                       {otp[index] || ""}
                     </Text>
-                  </View>
+                  </Animated.View>
                 );
               })}
             </View>

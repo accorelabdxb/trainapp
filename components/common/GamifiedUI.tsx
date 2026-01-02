@@ -1,3 +1,4 @@
+import { HapticFeedback } from '@/utils/haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { StyleProp, Text, TextStyle, TouchableOpacity, View, ViewStyle } from 'react-native';
@@ -70,6 +71,7 @@ export const GameCard: React.FC<GameCardProps> = ({
 
     const handlePressIn = () => {
         if (disabled) return;
+        HapticFeedback.light();
         pressed.value = withSpring(1, SPRING_CONFIG);
     };
 
@@ -169,7 +171,13 @@ export const GameButton: React.FC<GameButtonProps> = ({
             <TouchableOpacity
                 activeOpacity={1}
                 onPress={onPress}
-                onPressIn={() => !disabled && (pressed.value = withSpring(1, SPRING_CONFIG))}
+                onPress={onPress}
+                onPressIn={() => {
+                    if (!disabled) {
+                        HapticFeedback.light();
+                        pressed.value = withSpring(1, SPRING_CONFIG);
+                    }
+                }}
                 onPressOut={() => !disabled && (pressed.value = withSpring(0, SPRING_CONFIG))}
                 disabled={disabled}
             >

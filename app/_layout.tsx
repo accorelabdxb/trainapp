@@ -1,3 +1,4 @@
+import { ToastProvider } from "@/context/ToastContext";
 import { Slot, useRouter, useSegments } from "expo-router";
 import { useEffect, useState } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -73,7 +74,9 @@ export default function RootLayout() {
           <ErrorBoundary>
             <AppProvider>
               <ProfileProvider>
-                <AuthRouter />
+                <ToastProvider>
+                  <AuthRouter />
+                </ToastProvider>
               </ProfileProvider>
             </AppProvider>
           </ErrorBoundary>
